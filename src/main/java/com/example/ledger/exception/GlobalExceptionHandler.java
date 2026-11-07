@@ -40,7 +40,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    @ExceptionHandler({
+            InsufficientFundsException.class,
+            InvalidTransferException.class,
+            IllegalArgumentException.class,
+            IllegalStateException.class
+    })
     public ResponseEntity<Map<String, Object>> handleBusinessRules(RuntimeException ex) {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", Instant.now().toString());
