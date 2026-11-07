@@ -58,10 +58,21 @@ class TransferControllerTest {
         CreateTransferRequest request = new CreateTransferRequest(1L, 2L, 0L);
 
         mockMvc.perform(post("/transfers")
+                        .header("Idempotency-Key", "key-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.details.amountCents").exists());
+    }
+
+    @Test
+    void createTransferReturns400OnMissingIdempotencyHeader() throws Exception {
+        CreateTransferRequest request = new CreateTransferRequest(1L, 2L, 500L);
+
+        mockMvc.perform(post("/transfers")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -71,6 +82,7 @@ class TransferControllerTest {
                 .thenThrow(new InsufficientFundsException(1L, 50000L, 1000L));
 
         mockMvc.perform(post("/transfers")
+                        .header("Idempotency-Key", "key-2")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -85,6 +97,7 @@ class TransferControllerTest {
                 .thenThrow(new AccountNotFoundException(99L));
 
         mockMvc.perform(post("/transfers")
+                        .header("Idempotency-Key", "key-3")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
@@ -99,6 +112,7 @@ class TransferControllerTest {
                 .thenThrow(new InvalidTransferException("Cannot transfer money to the same account"));
 
         mockMvc.perform(post("/transfers")
+                        .header("Idempotency-Key", "key-4")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())

@@ -44,9 +44,10 @@ public class GlobalExceptionHandler {
             InsufficientFundsException.class,
             InvalidTransferException.class,
             IllegalArgumentException.class,
-            IllegalStateException.class
+            IllegalStateException.class,
+            org.springframework.web.bind.MissingRequestHeaderException.class
     })
-    public ResponseEntity<Map<String, Object>> handleBusinessRules(RuntimeException ex) {
+    public ResponseEntity<Map<String, Object>> handleBusinessRules(Exception ex) {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", Instant.now().toString());
         body.put("status", HttpStatus.BAD_REQUEST.value());

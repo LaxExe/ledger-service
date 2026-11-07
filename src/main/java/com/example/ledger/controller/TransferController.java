@@ -22,14 +22,14 @@ public class TransferController {
 
     @PostMapping
     public ResponseEntity<TransferResponse> createTransfer(
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestHeader(value = "Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody CreateTransferRequest request
     ) {
-        String key = (idempotencyKey != null && !idempotencyKey.isBlank())
-                ? idempotencyKey
-                : UUID.randomUUID().toString();
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new IllegalArgumentException("Idempotency-Key header is required and cannot be blank");
+        }
 
-        TransferResponse response = transferService.transfer(key, request);
+        TransferResponse response = transferService.transfer(idempotencyKey.trim(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

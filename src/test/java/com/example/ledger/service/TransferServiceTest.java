@@ -39,11 +39,16 @@ class TransferServiceTest {
     @Mock
     private LedgerEntryRepository ledgerEntryRepository;
 
+    @Mock
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
+
     private TransferService transferService;
 
     @BeforeEach
     void setUp() {
-        transferService = new TransferService(accountRepository, transferRepository, ledgerEntryRepository);
+        org.springframework.transaction.TransactionStatus status = mock(org.springframework.transaction.TransactionStatus.class);
+        org.mockito.Mockito.lenient().when(transactionManager.getTransaction(any())).thenReturn(status);
+        transferService = new TransferService(accountRepository, transferRepository, ledgerEntryRepository, transactionManager);
     }
 
     @Test
@@ -57,7 +62,7 @@ class TransferServiceTest {
         when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
         when(accountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
 
-        when(transferRepository.save(any(Transfer.class))).thenAnswer(invocation -> {
+        when(transferRepository.saveAndFlush(any(Transfer.class))).thenAnswer(invocation -> {
             Transfer t = invocation.getArgument(0);
             ReflectionTestUtils.setField(t, "id", 100L);
             return t;
@@ -106,7 +111,8 @@ class TransferServiceTest {
 
         assertThat(fromAccount.getBalanceCents()).isEqualTo(1000L);
         assertThat(toAccount.getBalanceCents()).isEqualTo(2000L);
-        verifyNoInteractions(transferRepository, ledgerEntryRepository);
+        verify(transferRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(ledgerEntryRepository);
     }
 
     @Test
@@ -117,7 +123,27 @@ class TransferServiceTest {
                 .isInstanceOf(InvalidTransferException.class)
                 .hasMessageContaining("same account");
 
-        verifyNoInteractions(accountRepository, transferRepository, ledgerEntryRepository);
+        verifyNoInteractions(accountRepository, ledgerEntryRepository);
+        verify(transferRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void transferWithExistingIdempotencyKeyReturnsOriginalTransferWithoutMovingMoney() {
+        Transfer existingTransfer = new Transfer(1L, 2L, 2000L, "existing-key");
+        ReflectionTestUtils.setField(existingTransfer, "id", 55L);
+
+        when(transferRepository.findByIdempotencyKey("existing-key")).thenReturn(Optional.of(existingTransfer));
+
+        CreateTransferRequest request = new CreateTransferRequest(1L, 2L, 2000L);
+        TransferResponse response = transferService.transfer("existing-key", request);
+
+        assertThat(response.id()).isEqualTo(55L);
+        assertThat(response.amountCents()).isEqualTo(2000L);
+        assertThat(response.idempotencyKey()).isEqualTo("existing-key");
+
+        // Verify no accounts or entries were modified
+        verifyNoInteractions(accountRepository, ledgerEntryRepository);
+        verify(transferRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -129,6 +155,7 @@ class TransferServiceTest {
         assertThatThrownBy(() -> transferService.transfer("idem-4", request))
                 .isInstanceOf(AccountNotFoundException.class);
 
-        verifyNoInteractions(transferRepository, ledgerEntryRepository);
+        verify(transferRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(ledgerEntryRepository);
     }
 }

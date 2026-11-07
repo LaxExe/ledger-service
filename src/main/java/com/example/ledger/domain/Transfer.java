@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "transfers")
+@Table(
+        name = "transfers",
+        uniqueConstraints = @UniqueConstraint(name = "uk_transfers_idempotency_key", columnNames = "idempotency_key")
+)
 public class Transfer {
 
     @Id
@@ -20,7 +23,7 @@ public class Transfer {
     @Column(nullable = false)
     private Long amountCents;
 
-    @Column(nullable = false)
+    @Column(name = "idempotency_key", nullable = false, unique = true)
     private String idempotencyKey;
 
     @Column(nullable = false)

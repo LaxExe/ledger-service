@@ -11,8 +11,12 @@ import com.example.ledger.exception.InvalidTransferException;
 import com.example.ledger.repository.AccountRepository;
 import com.example.ledger.repository.LedgerEntryRepository;
 import com.example.ledger.repository.TransferRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.Optional;
 
 @Service
 public class TransferService {
@@ -20,19 +24,45 @@ public class TransferService {
     private final AccountRepository accountRepository;
     private final TransferRepository transferRepository;
     private final LedgerEntryRepository ledgerEntryRepository;
+    private final TransactionTemplate transactionTemplate;
 
     public TransferService(
             AccountRepository accountRepository,
             TransferRepository transferRepository,
-            LedgerEntryRepository ledgerEntryRepository
+            LedgerEntryRepository ledgerEntryRepository,
+            PlatformTransactionManager transactionManager
     ) {
         this.accountRepository = accountRepository;
         this.transferRepository = transferRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
-    @Transactional
     public TransferResponse transfer(String idempotencyKey, CreateTransferRequest request) {
+        // Fast-path: return existing transfer if this key was already processed
+        Optional<Transfer> existing = transferRepository.findByIdempotencyKey(idempotencyKey);
+        if (existing.isPresent()) {
+            return TransferResponse.from(existing.get());
+        }
+
+        try {
+            return transactionTemplate.execute(status -> executeTransfer(idempotencyKey, request));
+        } catch (DataIntegrityViolationException e) {
+            // Concurrent race condition: another thread saved this idempotency key at the exact same instant.
+            // Catch the database unique constraint violation and return the winner's transfer.
+            return transferRepository.findByIdempotencyKey(idempotencyKey)
+                    .map(TransferResponse::from)
+                    .orElseThrow(() -> e);
+        }
+    }
+
+    private TransferResponse executeTransfer(String idempotencyKey, CreateTransferRequest request) {
+        // Double-check inside transaction boundary
+        Optional<Transfer> existing = transferRepository.findByIdempotencyKey(idempotencyKey);
+        if (existing.isPresent()) {
+            return TransferResponse.from(existing.get());
+        }
+
         if (request.fromAccountId().equals(request.toAccountId())) {
             throw new InvalidTransferException("Cannot transfer money to the same account");
         }
@@ -74,7 +104,7 @@ public class TransferService {
                 request.amountCents(),
                 idempotencyKey
         );
-        Transfer savedTransfer = transferRepository.save(transfer);
+        Transfer savedTransfer = transferRepository.saveAndFlush(transfer);
 
         // Double-entry bookkeeping: debit entry (-amount) and credit entry (+amount)
         LedgerEntry debitEntry = new LedgerEntry(savedTransfer, fromAccount, -request.amountCents());
