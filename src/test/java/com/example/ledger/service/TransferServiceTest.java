@@ -54,8 +54,8 @@ class TransferServiceTest {
         Account toAccount = new Account("Bob", 2000L);
         ReflectionTestUtils.setField(toAccount, "id", 2L);
 
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(fromAccount));
-        when(accountRepository.findById(2L)).thenReturn(Optional.of(toAccount));
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
+        when(accountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
 
         when(transferRepository.save(any(Transfer.class))).thenAnswer(invocation -> {
             Transfer t = invocation.getArgument(0);
@@ -95,8 +95,8 @@ class TransferServiceTest {
         Account toAccount = new Account("Bob", 2000L);
         ReflectionTestUtils.setField(toAccount, "id", 2L);
 
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(fromAccount));
-        when(accountRepository.findById(2L)).thenReturn(Optional.of(toAccount));
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(fromAccount));
+        when(accountRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(toAccount));
 
         CreateTransferRequest request = new CreateTransferRequest(1L, 2L, 5000L);
 
@@ -122,7 +122,7 @@ class TransferServiceTest {
 
     @Test
     void transferFailsWhenAccountNotFound() {
-        when(accountRepository.findById(1L)).thenReturn(Optional.empty());
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
 
         CreateTransferRequest request = new CreateTransferRequest(1L, 2L, 500L);
 

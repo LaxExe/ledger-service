@@ -37,13 +37,18 @@ public class TransferService {
             throw new InvalidTransferException("Cannot transfer money to the same account");
         }
 
-        // Load source account
-        Account fromAccount = accountRepository.findById(request.fromAccountId())
-                .orElseThrow(() -> new AccountNotFoundException(request.fromAccountId()));
+        // Lock in fixed order (lowest id first) to prevent deadlocks under concurrent bidirectional transfers
+        Long firstId = Math.min(request.fromAccountId(), request.toAccountId());
+        Long secondId = Math.max(request.fromAccountId(), request.toAccountId());
 
-        // Load destination account
-        Account toAccount = accountRepository.findById(request.toAccountId())
-                .orElseThrow(() -> new AccountNotFoundException(request.toAccountId()));
+        Account firstAccount = accountRepository.findByIdForUpdate(firstId)
+                .orElseThrow(() -> new AccountNotFoundException(firstId));
+
+        Account secondAccount = accountRepository.findByIdForUpdate(secondId)
+                .orElseThrow(() -> new AccountNotFoundException(secondId));
+
+        Account fromAccount = firstAccount.getId().equals(request.fromAccountId()) ? firstAccount : secondAccount;
+        Account toAccount = firstAccount.getId().equals(request.toAccountId()) ? firstAccount : secondAccount;
 
         // Check funds
         if (fromAccount.getBalanceCents() < request.amountCents()) {
