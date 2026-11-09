@@ -84,34 +84,37 @@
     .log .ok { color:var(--ok); } .log .bad { color:var(--bad); }
     .result { display:flex; gap:24px; flex-wrap:wrap; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); font-family:var(--font-mono); font-size:12px; }
     .result b { color:var(--ink); }
-    .bal { display:flex; align-items:baseline; gap:10px; margin-bottom:8px; }
-    .bal b { font-family:var(--font-mono); font-size:30px; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
-    .bal span { font-size:12px; color:var(--ink-muted); }
-    .bar { height:6px; background:var(--surface-subtle); border:1px solid var(--border); border-radius:6px; overflow:hidden; margin-bottom:14px; }
-    .bar i { display:block; height:100%; width:100%; background:var(--ink); transition:width .08s linear; }
-    .lanes { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; margin-bottom:14px; }
-    .lane { height:28px; border:1px solid var(--border); border-radius:6px; font:500 10.5px var(--font-mono); color:var(--ink-muted); display:flex; align-items:center; justify-content:center; transition:background .25s, color .25s, border-color .25s; }
-    .lane.read { border-color:var(--ink-muted); color:var(--ink); }
-    .lane.write { background:var(--ink); color:var(--canvas); border-color:var(--ink); transition:none; }
-    .lane.wait { border-style:dashed; }
-    .cells { display:grid; grid-template-columns:repeat(10,1fr); gap:6px; margin-bottom:14px; }
-    .cell { height:44px; border:1px solid var(--border); border-radius:6px; font:500 10.5px var(--font-mono); color:var(--ink-muted); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.3; opacity:.5; transform:scale(.94); transition:all .25s; }
-    .cell.in { opacity:1; transform:none; }
-    .cell.new { border-color:var(--ok); color:var(--ok); }
-    .cell.dup { border-color:var(--bad); color:var(--bad); }
-    .cell.same { color:var(--ink-secondary); background:var(--surface-subtle); }
-    .shake { animation:shake .3s; }
-    @keyframes shake { 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
-    .speed { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--ink-muted); margin-bottom:10px; }
-    .speed input { width:140px; accent-color:var(--ink); }
-    .speed span { font-family:var(--font-mono); }
-    .cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    @media (max-width:560px) { .cols { grid-template-columns:1fr; } }
-    .col h4 { font:500 12px var(--font-sans); color:var(--ink); margin-bottom:8px; }
-    .col h4 span { color:var(--ink-muted); font-weight:400; }
-    .col .lanes { grid-template-columns:repeat(4,1fr); }
-    .col .cells { grid-template-columns:repeat(5,1fr); }
-    .col .result { gap:14px; }
+    .walk { margin-bottom: 20px; }
+    .tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; align-items:center; }
+    .tabs .grp { font:500 11px var(--font-mono); color:var(--ink-muted); text-transform:uppercase; letter-spacing:.04em; margin:0 4px 0 8px; }
+    .tabs .grp:first-child { margin-left:0; }
+    .tab { background:var(--surface); border:1px solid var(--border); color:var(--ink-secondary); font:500 12px var(--font-sans); padding:4px 10px; border-radius:6px; cursor:pointer; }
+    .tab:hover { border-color:var(--border-hover); color:var(--ink); }
+    .tab.on { background:var(--ink); color:var(--canvas); border-color:var(--ink); }
+    .case { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .case-top { padding:16px 18px 4px; }
+    .case-top h3 { margin:0 0 4px; font-size:17px; }
+    .case-top p { margin-bottom:10px; }
+    .state { display:flex; flex-wrap:wrap; gap:8px; padding:10px 18px; background:var(--surface-subtle); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+    .chip { font-size:12px; color:var(--ink-muted); }
+    .chip b { font-family:var(--font-mono); font-weight:600; color:var(--ink); margin-left:4px; padding:1px 6px; border:1px solid var(--border); background:var(--surface); border-radius:4px; transition:all .2s; }
+    .chip b.changed { border-color:var(--ink); }
+    .steps { list-style:none; padding:6px 18px 14px; }
+    .step { display:grid; grid-template-columns:86px 1fr; gap:12px; padding:9px 0; border-bottom:1px dashed var(--border); opacity:.45; transition:opacity .2s; }
+    .step:last-child { border-bottom:none; }
+    .step.cur { opacity:1; }
+    .step.hide { display:none; }
+    .who { font:500 11px var(--font-mono); padding:2px 6px; border-radius:4px; height:fit-content; text-align:center; border:1px solid var(--border); color:var(--ink-secondary); }
+    .who.r1 { background:var(--ink); color:var(--canvas); border-color:var(--ink); }
+    .who.r2 { border-color:var(--ink); color:var(--ink); }
+    .step p { margin:0; color:var(--ink); font-size:14px; }
+    .step .sub { color:var(--ink-muted); font-size:13px; margin-top:2px; }
+    .step.good p { color:var(--ok); font-weight:600; }
+    .step.bad p { color:var(--bad); font-weight:600; }
+    .walk-f { display:flex; justify-content:space-between; align-items:center; padding:10px 18px; border-top:1px solid var(--border); background:var(--surface-subtle); font-size:12px; color:var(--ink-muted); }
+    .run.alt { background:var(--surface); color:var(--ink); border:1px solid var(--border); }
+    .run:disabled { opacity:.35; cursor:default; }
+    @media (max-width:520px) { .step { grid-template-columns:1fr; gap:4px; } .who { width:fit-content; } }
     footer { margin-top:56px; padding-top:20px; border-top:1px solid var(--border); font-size:13px; color:var(--ink-muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
   </style>
 </head>
@@ -144,23 +147,20 @@
     <div class="cmd"><div class="t"><span class="p">$</span><span id="c2">curl -i http://localhost:8080/health</span></div><button class="copy" data-t="c2">Copy</button></div>
   </section>
 
-  <h2 id="demo">Try breaking it</h2>
-  <p>
-    These two demos run in your browser and just mimic the problems. They don't talk to a real server. The real versions run against PostgreSQL in the tests.
-  </p>
+  <h2 id="demo">See what goes wrong, one case at a time</h2>
+  <p>There are seven short cases below: three things that can go wrong and the fixes for them. Pick one and click <strong>Next step</strong> to move through it. These are walkthroughs of the logic, not a live server. The real thing is tested against PostgreSQL.</p>
 
-  <div class="speed"><label for="speed">Speed</label><input type="range" id="speed" min="0.5" max="3" step="0.5" value="1"><span id="speedVal">1x</span></div>
-
-  <div class="sim">
-    <div class="sim-h"><span>Lost updates: 50 withdrawals of $1.00, 8 threads, Alice starts with $50.00</span></div>
-    <div class="sim-b"><div class="cols" id="lostCols"></div></div>
-    <div class="sim-f"><span>Both sides run at the same time. Each thread reads the balance, then writes it back.</span><button class="run" id="runLost">Run both</button></div>
-  </div>
-
-  <div class="sim">
-    <div class="sim-h"><span>Duplicate retries: the same $25.00 transfer sent 10 times at once</span></div>
-    <div class="sim-b"><div class="cols" id="idemCols"></div></div>
-    <div class="sim-f"><span>With a key, the unique constraint lets one insert win. The rest get that transfer back.</span><button class="run" id="runIdem">Run both</button></div>
+  <div class="walk" id="walk">
+    <div class="tabs" id="tabs"></div>
+    <div class="case">
+      <div class="case-top"><h3 id="caseTitle"></h3><p id="caseIntro"></p></div>
+      <div class="state" id="state"></div>
+      <ol class="steps" id="steps"></ol>
+      <div class="walk-f">
+        <span id="stepCount"></span>
+        <div><button class="run alt" id="back">Back</button> <button class="run" id="next">Next step</button></div>
+      </div>
+    </div>
   </div>
 
   <h2 id="how">How it works</h2>
@@ -277,95 +277,117 @@ Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(...);
     navigator.clipboard.writeText(document.getElementById(b.dataset.t).textContent);
     b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1200);
   });
-  const usd = c => '$' + (c / 100).toFixed(2);
-  const speedEl = document.getElementById('speed');
-  const sp = () => +speedEl.value;
-  speedEl.oninput = () => document.getElementById('speedVal').textContent = sp() + 'x';
-  const sleep = ms => new Promise(r => setTimeout(r, ms / sp()));
+  const CASES = [
+    { group: 'Problem', tab: '1. Lost update', title: 'Two withdrawals at the same time, no lock',
+      intro: 'Alice has $50. Two requests each want to take $1 out, and they arrive together.',
+      state: ['Alice\'s balance'],
+      steps: [
+        { who: 'start', t: 'Nothing has happened yet.', s: ['$50'] },
+        { who: 'r1', t: 'Request 1 reads Alice\'s balance and sees $50.', s: ['$50'] },
+        { who: 'r2', t: 'Request 2 reads Alice\'s balance too. Request 1 hasn\'t saved anything yet, so it also sees $50.', s: ['$50'] },
+        { who: 'r1', t: 'Request 1 works out 50 - 1 = 49 and saves $49.', s: ['$49'] },
+        { who: 'r2', t: 'Request 2 works out 50 - 1 = 49, using the old number it read earlier, and saves $49.', s: ['$49'] },
+        { who: 'end', tone: 'bad', t: 'Two $1 withdrawals went through, but Alice only lost $1. It should say $48. One dollar disappeared.' } ] },
+    { group: 'Fix', tab: '2. Row lock', title: 'The same two withdrawals, with a row lock',
+      intro: 'Same situation, but now a request has to lock Alice\'s row before it reads her balance (SELECT ... FOR UPDATE).',
+      state: ['Alice\'s balance', 'Lock on Alice'],
+      steps: [
+        { who: 'start', t: 'Nothing has happened yet.', s: ['$50', 'free'] },
+        { who: 'r1', t: 'Request 1 asks for the lock on Alice and gets it. It reads $50.', s: ['$50', 'Request 1'] },
+        { who: 'r2', t: 'Request 2 asks for the same lock. It is taken, so Request 2 waits.', s: ['$50', 'Request 1 (Request 2 waiting)'] },
+        { who: 'r1', t: 'Request 1 saves $49, finishes and releases the lock.', s: ['$49', 'free'] },
+        { who: 'r2', t: 'Request 2 finally gets the lock. Now it reads $49, the up to date number.', s: ['$49', 'Request 2'] },
+        { who: 'r2', t: 'Request 2 saves $48 and releases the lock.', s: ['$48', 'free'] },
+        { who: 'end', tone: 'good', t: 'Alice has $48, which is right. The requests took turns instead of overlapping.' } ] },
+    { group: 'Problem', tab: '3. Deadlock', title: 'Two transfers in opposite directions',
+      intro: 'Request 1 sends $10 from Alice to Bob. Request 2 sends $5 from Bob to Alice. Each one locks the sender first, then the receiver.',
+      state: ['Lock on Alice', 'Lock on Bob'],
+      steps: [
+        { who: 'start', t: 'Nothing has happened yet.', s: ['free', 'free'] },
+        { who: 'r1', t: 'Request 1 locks Alice, because she is the sender.', s: ['Request 1', 'free'] },
+        { who: 'r2', t: 'Request 2 locks Bob, because he is its sender.', s: ['Request 1', 'Request 2'] },
+        { who: 'r1', t: 'Request 1 now needs Bob\'s lock. Request 2 has it, so Request 1 waits.', s: ['Request 1', 'Request 2'] },
+        { who: 'r2', t: 'Request 2 now needs Alice\'s lock. Request 1 has it, so Request 2 waits.', s: ['Request 1', 'Request 2'] },
+        { who: 'end', tone: 'bad', t: 'Each request is waiting for the other one. Neither can ever continue. This is a deadlock. PostgreSQL will cancel one of them with an error.' } ] },
+    { group: 'Fix', tab: '4. Lock order', title: 'The same transfers, always locking the lowest id first',
+      intro: 'Alice is account 1 and Bob is account 2. The rule in TransferService: lock the account with the lower id first, no matter who is sending.',
+      state: ['Lock on Alice (1)', 'Lock on Bob (2)'],
+      steps: [
+        { who: 'start', t: 'Nothing has happened yet.', s: ['free', 'free'] },
+        { who: 'r1', t: 'Request 1 locks Alice (id 1) first.', s: ['Request 1', 'free'] },
+        { who: 'r2', t: 'Request 2 also has to lock Alice first, even though Bob is sending. She is taken, so it waits. It has not touched Bob.', s: ['Request 1', 'free'] },
+        { who: 'r1', t: 'Request 1 locks Bob, moves the $10, and releases both locks.', s: ['free', 'free'] },
+        { who: 'r2', t: 'Request 2 gets Alice, then Bob, moves its $5, and finishes.', s: ['Request 2', 'Request 2'] },
+        { who: 'end', tone: 'good', t: 'Both transfers finished. Nobody waited in a circle, because everyone asks for locks in the same order.' } ] },
+    { group: 'Problem', tab: '5. Retry', title: 'A retry with no idempotency key',
+      intro: 'A client sends "pay Bob $25". The server does it, but the reply gets lost on the way back.',
+      state: ['Alice\'s balance', 'Transfers saved'],
+      steps: [
+        { who: 'start', t: 'Alice has $100 and nothing has been sent.', s: ['$100', '0'] },
+        { who: 'r1', t: 'The client sends: pay Bob $25.', s: ['$100', '0'] },
+        { who: 'db', t: 'The server moves the money and saves the transfer.', s: ['$75', '1'] },
+        { who: 'db', t: 'The reply is lost in the network. The client never hears back.', s: ['$75', '1'] },
+        { who: 'r1', t: 'The client times out and sends the exact same request again. It has no way to know the first one worked.', s: ['$75', '1'] },
+        { who: 'db', t: 'The server sees a normal request and moves $25 again.', s: ['$50', '2'] },
+        { who: 'end', tone: 'bad', t: 'Alice was charged twice for one payment.' } ] },
+    { group: 'Fix', tab: '6. Idempotency key', title: 'The same retry, with an Idempotency-Key',
+      intro: 'Now the client attaches a unique key to the request, like Idempotency-Key: abc-123, and sends the same key on every retry.',
+      state: ['Alice\'s balance', 'Transfers saved'],
+      steps: [
+        { who: 'start', t: 'Alice has $100 and nothing has been sent.', s: ['$100', '0'] },
+        { who: 'r1', t: 'The client sends: pay Bob $25, key abc-123.', s: ['$100', '0'] },
+        { who: 'db', t: 'The server moves the money and saves the transfer together with the key abc-123.', s: ['$75', '1'] },
+        { who: 'db', t: 'The reply is lost in the network.', s: ['$75', '1'] },
+        { who: 'r1', t: 'The client retries with the same key, abc-123.', s: ['$75', '1'] },
+        { who: 'db', t: 'The server looks up abc-123, finds the transfer it already saved, and sends that back. It moves no money.', s: ['$75', '1'] },
+        { who: 'end', tone: 'good', t: 'Alice was charged once, and the client still got an answer.' } ] },
+    { group: 'Fix', tab: '7. Exact same moment', title: 'Two identical requests at the very same moment',
+      intro: 'The lookup in case 6 is not enough by itself. If both copies arrive together, both can look before either one saves. This is what the unique constraint is for.',
+      state: ['Alice\'s balance', 'Transfers saved'],
+      steps: [
+        { who: 'start', t: 'Alice has $100. Two copies of "pay Bob $25, key abc-123" arrive at once.', s: ['$100', '0'] },
+        { who: 'r1', t: 'Request 1 looks for abc-123. Not found, so it carries on.', s: ['$100', '0'] },
+        { who: 'r2', t: 'Request 2 looks for abc-123. Also not found, because Request 1 has not saved yet.', s: ['$100', '0'] },
+        { who: 'r1', t: 'Request 1 saves its transfer with key abc-123.', s: ['$75', '1'] },
+        { who: 'r2', t: 'Request 2 tries to save a transfer with the same key. The database refuses, because the key column must be unique. Request 2\'s changes are rolled back.', s: ['$75', '1'] },
+        { who: 'r2', t: 'The code catches that error, reads the transfer Request 1 saved, and returns it.', s: ['$75', '1'] },
+        { who: 'end', tone: 'good', t: 'Only one transfer exists and Alice was charged once. The database itself guarantees it, even when the timing is bad.' } ] }
+  ];
 
-  function column(title, sub, inner) {
-    const d = document.createElement('div'); d.className = 'col';
-    d.innerHTML = `<h4>${title} <span>${sub}</span></h4>${inner}`;
-    return d;
-  }
+  const WHO = { start: ['Setup', ''], r1: ['Request 1', 'r1'], r2: ['Request 2', 'r2'], db: ['Server', ''], end: ['Result', ''] };
+  const tabsEl = document.getElementById('tabs'), stepsEl = document.getElementById('steps'), stateEl = document.getElementById('state');
+  const backB = document.getElementById('back'), nextB = document.getElementById('next');
+  let cur = 0, step = 0, lastGroup = '';
 
-  // Demo 1: lost updates
-  const N = 50, T = 8, START = 5000;
-  function lostCol(lock) {
-    const el = column(lock ? 'Row lock' : 'No locking', lock ? 'SELECT ... FOR UPDATE' : 'plain read and write', `
-      <div class="bal"><b>${usd(START)}</b><span>Alice</span></div>
-      <div class="bar"><i></i></div>
-      <div class="lanes">${Array.from({ length: T }, (_, i) => `<div class="lane">T${i + 1}</div>`).join('')}</div>
-      <div class="log"></div>
-      <div class="result"><span>Expected <b>${usd(START - N * 100)}</b></span><span>Actual <b class="act">&mdash;</b></span><span>Vanished <b class="gone">&mdash;</b></span></div>`);
-    const q = c => el.querySelector(c), lanes = [...el.querySelectorAll('.lane')];
-    const setBal = c => { q('.bal b').textContent = usd(c); q('.bar i').style.width = (Math.max(c, 0) / 50) + '%'; };
-    const say = (t, c) => { const l = q('.log'); l.innerHTML += `<div class="${c || ''}">${t}</div>`; l.scrollTop = l.scrollHeight; };
-    async function run() {
-      let balance = START, locked = false, shown = 0, next = 0;
-      setBal(balance); q('.log').innerHTML = ''; q('.bal span').textContent = 'Alice';
-      for (const c of ['.act', '.gone']) { q(c).textContent = '\u2014'; q(c).style.color = ''; }
-      const worker = async (t, lane) => {
-        if (lock) { lane.className = 'lane wait'; while (locked) await sleep(5); locked = true; }
-        const read = balance;
-        lane.className = 'lane read'; lane.textContent = usd(read).replace('.00', '');
-        await sleep(40 + Math.random() * 90);
-        balance = read - 100; setBal(balance);
-        lane.className = 'lane write'; lane.textContent = usd(balance).replace('.00', '');
-        if (lock) locked = false;
-        if (shown++ < 5) say(`T${t + 1} read ${usd(read)}, wrote ${usd(balance)}`);
-        await sleep(30);
-        lane.className = 'lane'; lane.textContent = 'T' + (t + 1);
-      };
-      await Promise.all(lanes.map(async (lane, t) => { while (next++ < N) await worker(t, lane); }));
-      const gone = balance - (START - N * 100);
-      q('.act').textContent = usd(balance);
-      q('.gone').textContent = usd(gone); q('.gone').style.color = gone ? 'var(--bad)' : 'var(--ok)';
-      say(gone ? `${usd(gone)} of withdrawals were overwritten.` : 'Every withdrawal counted.', gone ? 'bad' : 'ok');
-      q('.bal span').textContent = gone ? 'Alice (wrong)' : 'Alice (correct)';
-    }
-    return { el, run };
-  }
+  CASES.forEach((c, i) => {
+    if (c.group !== lastGroup) { tabsEl.insertAdjacentHTML('beforeend', `<span class="grp">${c.group === 'Problem' ? 'Problems' : 'Fixes'}</span>`); lastGroup = c.group; }
+    const b = document.createElement('button'); b.className = 'tab'; b.textContent = c.tab;
+    b.onclick = () => { cur = i; step = 0; render(); }; tabsEl.appendChild(b);
+  });
 
-  // Demo 2: duplicate retries
-  const R = 10, AMT = 2500;
-  function idemCol(useKey) {
-    const el = column(useKey ? 'Idempotency-Key' : 'No key', useKey ? 'unique constraint' : 'nothing stops repeats', `
-      <div class="cells">${Array.from({ length: R }, (_, i) => `<div class="cell"><span>#${i + 1}</span><span>&nbsp;</span></div>`).join('')}</div>
-      <div class="log"></div>
-      <div class="result"><span>Transfers <b class="n">&mdash;</b></span><span>Alice charged <b class="amt">&mdash;</b></span></div>`);
-    const q = c => el.querySelector(c), cells = [...el.querySelectorAll('.cell')];
-    const say = (t, c) => { const l = q('.log'); l.innerHTML += `<div class="${c || ''}">${t}</div>`; l.scrollTop = l.scrollHeight; };
-    async function run() {
-      const transfers = []; let winner = null;
-      q('.log').innerHTML = ''; q('.n').textContent = q('.amt').textContent = '\u2014'; q('.amt').style.color = '';
-      cells.forEach((c, i) => { c.className = 'cell'; c.lastChild.textContent = '\u00a0'; });
-      await Promise.all(cells.map(async (cell, i) => {
-        await sleep(Math.random() * 700);
-        let cls, label;
-        if (useKey && winner) { cls = 'same'; label = 'same #' + winner; say(`request ${i + 1}: key exists, returned #${winner}`); }
-        else {
-          const id = transfers.length + 1; transfers.push(AMT); label = 'new #' + id;
-          if (useKey) { winner = id; cls = 'new'; say(`request ${i + 1}: inserted #${id}`, 'ok'); }
-          else { cls = id === 1 ? 'new' : 'dup'; say(`request ${i + 1}: inserted #${id}`, id === 1 ? 'ok' : 'bad'); }
-        }
-        cell.className = 'cell in ' + cls + (cls === 'dup' ? ' shake' : ''); cell.lastChild.textContent = label;
-      }));
-      q('.n').textContent = transfers.length;
-      q('.amt').textContent = usd(transfers.length * AMT);
-      q('.amt').style.color = transfers.length === 1 ? 'var(--ok)' : 'var(--bad)';
-    }
-    return { el, run };
+  function render() {
+    const c = CASES[cur];
+    [...tabsEl.querySelectorAll('.tab')].forEach((b, i) => b.classList.toggle('on', i === cur));
+    document.getElementById('caseTitle').textContent = c.title;
+    document.getElementById('caseIntro').textContent = c.intro;
+    stepsEl.innerHTML = c.steps.map((st, i) => {
+      const w = WHO[st.who];
+      return `<li class="step ${i === step ? 'cur' : ''} ${i > step ? 'hide' : ''} ${st.tone || ''}"><span class="who ${w[1]}">${w[0]}</span><p>${st.t}</p></li>`;
+    }).join('');
+    const now = c.steps[step].s || c.steps[step - 1].s, prev = step ? (c.steps[step - 1].s || now) : now;
+    const vals = c.steps[step].s || prev;
+    stateEl.innerHTML = c.state.map((l, k) => `<span class="chip">${l}<b class="${vals[k] !== prev[k] ? 'changed' : ''}">${vals[k]}</b></span>`).join('');
+    document.getElementById('stepCount').textContent = `Step ${step + 1} of ${c.steps.length}`;
+    backB.disabled = step === 0;
+    nextB.textContent = step === c.steps.length - 1 ? (cur < CASES.length - 1 ? 'Next case' : 'Start over') : 'Next step';
   }
-
-  function mount(rootId, btnId, makers) {
-    const cols = makers.map(m => m()), root = document.getElementById(rootId), btn = document.getElementById(btnId);
-    cols.forEach(c => root.appendChild(c.el));
-    let busy = false;
-    btn.onclick = async () => { if (busy) return; busy = true; await Promise.all(cols.map(c => c.run())); busy = false; };
-  }
-  mount('lostCols', 'runLost', [() => lostCol(false), () => lostCol(true)]);
-  mount('idemCols', 'runIdem', [() => idemCol(false), () => idemCol(true)]);
+  backB.onclick = () => { if (step > 0) { step--; render(); } };
+  nextB.onclick = () => {
+    if (step < CASES[cur].steps.length - 1) step++;
+    else { cur = (cur + 1) % CASES.length; step = 0; }
+    render();
+  };
+  render();
 </script>
 </body>
 </html>
