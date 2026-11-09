@@ -111,9 +111,14 @@
     .step .sub { color:var(--ink-muted); font-size:13px; margin-top:2px; }
     .step.good p { color:var(--ok); font-weight:600; }
     .step.bad p { color:var(--bad); font-weight:600; }
-    .walk-f { display:flex; justify-content:space-between; align-items:center; padding:10px 18px; border-top:1px solid var(--border); background:var(--surface-subtle); font-size:12px; color:var(--ink-muted); }
+    .walk-f { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 18px; border-top:1px solid var(--border); background:var(--surface-subtle); font-size:12px; color:var(--ink-muted); }
+    .walk-controls { display:flex; align-items:center; gap:8px; }
     .run.alt { background:var(--surface); color:var(--ink); border:1px solid var(--border); }
+    .run.play { display:inline-flex; align-items:center; gap:5px; background:var(--ink); color:var(--canvas); }
+    .run.play.playing { background:#2563eb; color:#fff; }
     .run:disabled { opacity:.35; cursor:default; }
+    .progress-bar-wrap { width:100%; height:3px; background:var(--border); }
+    .progress-bar { height:100%; width:0%; background:var(--ink); transition:width .25s ease; }
     @media (max-width:520px) { .step { grid-template-columns:1fr; gap:4px; } .who { width:fit-content; } }
     footer { margin-top:56px; padding-top:20px; border-top:1px solid var(--border); font-size:13px; color:var(--ink-muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
   </style>
@@ -123,6 +128,7 @@
   <div class="nav-inner">
     <a class="logo" href="#">Ledger Service</a>
     <div class="nav-right">
+      <a class="nav-link" href="#problems">Problems</a>
       <a class="nav-link" href="#demo">Demo</a>
       <a class="nav-link" href="#how">How it works</a>
       <a class="nav-link" href="#api">API</a>
@@ -147,18 +153,34 @@
     <div class="cmd"><div class="t"><span class="p">$</span><span id="c2">curl -i http://localhost:8080/health</span></div><button class="copy" data-t="c2">Copy</button></div>
   </section>
 
-  <h2 id="demo">See what goes wrong, one case at a time</h2>
-  <p>There are seven short cases below: three things that can go wrong and the fixes for them. Pick one and click <strong>Next step</strong> to move through it. These are walkthroughs of the logic, not a live server. The real thing is tested against PostgreSQL.</p>
+  <h2 id="problems">Problems &amp; how they were addressed</h2>
+  <p>When multiple services or clients transfer money, small race conditions cause lost funds, deadlocks, or duplicate debits. Here is how each failure mode was handled:</p>
+  <div class="tbl"><table>
+    <tr><th>Problem</th><th>What happens</th><th>How it was addressed</th></tr>
+    <tr><td><strong>Lost updates</strong></td><td>Concurrent transfers read the same initial balance, decrement it, and overwrite each other. Withdrawals vanish.</td><td><strong>Pessimistic row locking</strong> (<code>SELECT ... FOR UPDATE</code> via <code>@Lock(PESSIMISTIC_WRITE)</code>). Transactions queue until the lock releases.</td></tr>
+    <tr><td><strong>Deadlock cycles</strong></td><td>Alice sends to Bob while Bob sends to Alice. Each grabs one lock and waits indefinitely for the other.</td><td><strong>Ordered lock acquisition</strong>. The lower account ID is always locked first regardless of sender/receiver, eliminating circular waits.</td></tr>
+    <tr><td><strong>Duplicate retries</strong></td><td>Network timeouts cause client retries, executing an already-completed transfer twice.</td><td><strong>Idempotency keys</strong> with a unique DB constraint. Returns cached transfers immediately; caught duplicate inserts safely yield the winner.</td></tr>
+    <tr><td><strong>Rounding drift</strong></td><td>Floating point types (<code>float</code>, <code>double</code>) introduce inexact fractional cent rounding over time.</td><td><strong>Integer cent math</strong> stored in 64-bit <code>Long</code> fields (e.g. <code>balanceCents</code>, <code>amountCents</code>).</td></tr>
+    <tr><td><strong>Untracked balance changes</strong></td><td>Balances update in place without an audit trail of why the money shifted.</td><td><strong>Double-entry records</strong>. Every transfer writes two balanced immutable <code>ledger_entries</code> rows (debit + credit) summing to zero.</td></tr>
+  </table></div>
+
+  <h2 id="demo">Interactive walkthrough</h2>
+  <p>Select any scenario below. Hit <strong>Play</strong> for an automatic walkthrough, or step through manually. These visual steps replicate the exact logic executed against PostgreSQL.</p>
 
   <div class="walk" id="walk">
     <div class="tabs" id="tabs"></div>
     <div class="case">
+      <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
       <div class="case-top"><h3 id="caseTitle"></h3><p id="caseIntro"></p></div>
       <div class="state" id="state"></div>
       <ol class="steps" id="steps"></ol>
       <div class="walk-f">
         <span id="stepCount"></span>
-        <div><button class="run alt" id="back">Back</button> <button class="run" id="next">Next step</button></div>
+        <div class="walk-controls">
+          <button class="run alt" id="back">Back</button>
+          <button class="run play" id="playBtn">&#9654; Play</button>
+          <button class="run" id="next">Next</button>
+        </div>
       </div>
     </div>
   </div>
@@ -356,14 +378,50 @@ Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(...);
 
   const WHO = { start: ['Setup', ''], r1: ['Request 1', 'r1'], r2: ['Request 2', 'r2'], db: ['Server', ''], end: ['Result', ''] };
   const tabsEl = document.getElementById('tabs'), stepsEl = document.getElementById('steps'), stateEl = document.getElementById('state');
-  const backB = document.getElementById('back'), nextB = document.getElementById('next');
-  let cur = 0, step = 0, lastGroup = '';
+  const backB = document.getElementById('back'), nextB = document.getElementById('next'), playB = document.getElementById('playBtn');
+  const progressBar = document.getElementById('progressBar');
+  let cur = 0, step = 0, lastGroup = '', playTimer = null;
 
   CASES.forEach((c, i) => {
     if (c.group !== lastGroup) { tabsEl.insertAdjacentHTML('beforeend', `<span class="grp">${c.group === 'Problem' ? 'Problems' : 'Fixes'}</span>`); lastGroup = c.group; }
     const b = document.createElement('button'); b.className = 'tab'; b.textContent = c.tab;
-    b.onclick = () => { cur = i; step = 0; render(); }; tabsEl.appendChild(b);
+    b.onclick = () => { stopPlay(); cur = i; step = 0; render(); }; tabsEl.appendChild(b);
   });
+
+  function stopPlay() {
+    if (playTimer) {
+      clearInterval(playTimer);
+      playTimer = null;
+      playB.innerHTML = '&#9654; Play';
+      playB.classList.remove('playing');
+    }
+  }
+
+  function startPlay() {
+    playB.innerHTML = '&#10074;&#10074; Pause';
+    playB.classList.add('playing');
+    playTimer = setInterval(() => {
+      const c = CASES[cur];
+      if (step < c.steps.length - 1) {
+        step++;
+        render();
+      } else {
+        stopPlay();
+      }
+    }, 1800);
+  }
+
+  playB.onclick = () => {
+    if (playTimer) {
+      stopPlay();
+    } else {
+      if (step === CASES[cur].steps.length - 1) {
+        step = 0;
+        render();
+      }
+      startPlay();
+    }
+  };
 
   function render() {
     const c = CASES[cur];
@@ -378,11 +436,15 @@ Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(...);
     const vals = c.steps[step].s || prev;
     stateEl.innerHTML = c.state.map((l, k) => `<span class="chip">${l}<b class="${vals[k] !== prev[k] ? 'changed' : ''}">${vals[k]}</b></span>`).join('');
     document.getElementById('stepCount').textContent = `Step ${step + 1} of ${c.steps.length}`;
+    const pct = ((step + 1) / c.steps.length) * 100;
+    progressBar.style.width = pct + '%';
     backB.disabled = step === 0;
-    nextB.textContent = step === c.steps.length - 1 ? (cur < CASES.length - 1 ? 'Next case' : 'Start over') : 'Next step';
+    nextB.textContent = step === c.steps.length - 1 ? (cur < CASES.length - 1 ? 'Next case' : 'Restart') : 'Next';
   }
-  backB.onclick = () => { if (step > 0) { step--; render(); } };
+
+  backB.onclick = () => { stopPlay(); if (step > 0) { step--; render(); } };
   nextB.onclick = () => {
+    stopPlay();
     if (step < CASES[cur].steps.length - 1) step++;
     else { cur = (cur + 1) % CASES.length; step = 0; }
     render();

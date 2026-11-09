@@ -18,13 +18,17 @@ curl -i http://localhost:8080/health
 
 Tests: `./mvnw clean test` (the database has to be running).
 
-## The two problems
+## Problems and how they were addressed
 
-**Lost updates.** Two requests read a balance of $50. Both take $1 off and both save $49. Two withdrawals happened but the balance only dropped once.
+| Problem | What happens | How it was addressed |
+|---|---|---|
+| **Lost updates** | Two concurrent requests read the same initial balance, subtract funds, and overwrite each other. One withdrawal vanishes. | **Pessimistic row locking** via `SELECT ... FOR UPDATE` (`@Lock(PESSIMISTIC_WRITE)`). Other transactions targeting that account queue until it commits. |
+| **Deadlock cycles** | Alice sends to Bob while Bob sends to Alice. Each acquires one lock and blocks waiting on the other indefinitely. | **Ordered lock acquisition**. The lower account ID is always locked first regardless of transfer direction, breaking circular waits. |
+| **Network retry double-charges** | A client times out and retries an already completed transfer, causing funds to move twice. | **Idempotency keys** (`Idempotency-Key` header) with a unique database index. The fast-path returns cached results; duplicate inserts are caught and return the winner. |
+| **Floating-point rounding** | Using float or double causes imprecise fractional cent errors over time. | **Integer cent math** stored as 64-bit `Long` (`balanceCents`, `amountCents`). |
+| **Silent balance drift** | Account balances change without an audit trail of which transactions caused it. | **Double-entry ledger records**. Every transfer saves immutable paired entries (`-amount` debit, `+amount` credit) that sum to zero. |
 
-**Double charges.** A client sends a transfer, the response gets lost, so it sends the same transfer again. If the server just runs it, the money moves twice.
-
-## How I fixed them
+## How the transfer pipeline works
 
 All of it happens in `TransferService.transfer`, inside one transaction:
 
