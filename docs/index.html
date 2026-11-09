@@ -60,47 +60,36 @@
     .code-title + pre { margin-top:6px; }
     .kw { color:#8b5cf6; font-weight:600; } .cm { color:#737373; } .str { color:#059669; }
     [data-theme="dark"] .kw { color:#c084fc; } [data-theme="dark"] .str { color:#34d399; }
-    .metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin:20px 0 28px; }
-    .metric { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; }
-    .metric b { display:block; font-family:var(--font-mono); font-size:18px; }
-    .metric span { font-size:11.5px; color:var(--ink-muted); }
     .tbl { overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:var(--surface); margin:16px 0 24px; }
     table { width:100%; border-collapse:collapse; font-size:13px; }
-    th,td { text-align:left; padding:8px 12px; border-bottom:1px solid var(--border); vertical-align:top; color:var(--ink-secondary); }
+    th,td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; color:var(--ink-secondary); }
     th { font-weight:500; color:var(--ink); background:var(--surface-subtle); }
     tr:last-child td { border-bottom:none; }
     td code { white-space:nowrap; }
-    /* simulator */
-    .sim { background:var(--surface); border:1px solid var(--border); border-radius:10px; margin:0 0 20px; overflow:hidden; }
-    .sim-h { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 14px; background:var(--surface-subtle); border-bottom:1px solid var(--border); font-size:12px; font-weight:500; color:var(--ink-secondary); }
-    .seg { display:flex; gap:2px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:2px; }
-    .seg button { background:none; border:none; font:500 11px var(--font-sans); color:var(--ink-secondary); padding:2px 8px; border-radius:4px; cursor:pointer; }
-    .seg button.on { background:var(--ink); color:var(--canvas); }
-    .sim-b { padding:14px 16px; }
-    .sim-f { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:8px 14px; background:var(--surface-subtle); border-top:1px solid var(--border); font-size:11.5px; color:var(--ink-muted); }
-    .run { background:var(--ink); color:var(--canvas); border:none; font:500 12px var(--font-sans); padding:5px 14px; border-radius:6px; cursor:pointer; }
-    .run:hover { opacity:.9; }
-    .log { font-family:var(--font-mono); font-size:12px; line-height:1.6; min-height:84px; max-height:120px; overflow-y:auto; color:var(--ink-secondary); }
-    .log .ok { color:var(--ok); } .log .bad { color:var(--bad); }
-    .result { display:flex; gap:24px; flex-wrap:wrap; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); font-family:var(--font-mono); font-size:12px; }
-    .result b { color:var(--ink); }
-    .walk { margin-bottom: 20px; }
-    .tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; align-items:center; }
-    .tabs .grp { font:500 11px var(--font-mono); color:var(--ink-muted); text-transform:uppercase; letter-spacing:.04em; margin:0 4px 0 8px; }
-    .tabs .grp:first-child { margin-left:0; }
-    .tab { background:var(--surface); border:1px solid var(--border); color:var(--ink-secondary); font:500 12px var(--font-sans); padding:4px 10px; border-radius:6px; cursor:pointer; }
-    .tab:hover { border-color:var(--border-hover); color:var(--ink); }
-    .tab.on { background:var(--ink); color:var(--canvas); border-color:var(--ink); }
-    .case { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-    .case-top { padding:16px 18px 4px; }
-    .case-top h3 { margin:0 0 4px; font-size:17px; }
-    .case-top p { margin-bottom:10px; }
+    /* table row buttons & active highlight */
+    tr.prob-row { transition:background-color .2s ease; cursor:pointer; }
+    tr.prob-row:hover { background:var(--surface-subtle); }
+    tr.prob-row.active-row { background:var(--surface-subtle); }
+    .tbl-btn { background:var(--surface); border:1px solid var(--border); color:var(--ink); font:500 11.5px var(--font-sans); padding:5px 10px; border-radius:6px; cursor:pointer; white-space:nowrap; transition:all .15s ease; }
+    .tbl-btn:hover { border-color:var(--ink); }
+    tr.prob-row.active-row .tbl-btn { background:var(--ink); color:var(--canvas); border-color:var(--ink); }
+    /* walkthrough viewer */
+    .walk { margin-bottom:28px; }
+    .case { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; transition:border-color .3s ease; }
+    .case.is-fix { border-color:var(--ok); }
+    .case-top { padding:16px 18px 6px; }
+    .case-head { display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap; }
+    .case-badge { font:500 11px var(--font-mono); padding:2px 7px; border-radius:4px; border:1px solid var(--border); color:var(--ink-secondary); background:var(--surface-subtle); }
+    .case-badge.bad { border-color:color-mix(in srgb,var(--bad) 40%,var(--border)); color:var(--bad); }
+    .case-badge.good { border-color:color-mix(in srgb,var(--ok) 40%,var(--border)); color:var(--ok); }
+    .case-top h3 { margin:0; font-size:16.5px; }
+    .case-top p { margin-bottom:10px; font-size:14px; }
     .state { display:flex; flex-wrap:wrap; gap:8px; padding:10px 18px; background:var(--surface-subtle); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
     .chip { font-size:12px; color:var(--ink-muted); }
     .chip b { font-family:var(--font-mono); font-weight:600; color:var(--ink); margin-left:4px; padding:1px 6px; border:1px solid var(--border); background:var(--surface); border-radius:4px; transition:all .2s; }
-    .chip b.changed { border-color:var(--ink); }
-    .steps { list-style:none; padding:6px 18px 14px; }
-    .step { display:grid; grid-template-columns:86px 1fr; gap:12px; padding:9px 0; border-bottom:1px dashed var(--border); opacity:.45; transition:opacity .2s; }
+    .chip b.changed { border-color:var(--ink); background:var(--surface-subtle); }
+    .steps { list-style:none; padding:6px 18px 14px; min-height:190px; }
+    .step { display:grid; grid-template-columns:86px 1fr; gap:12px; padding:9px 0; border-bottom:1px dashed var(--border); opacity:.45; transition:opacity .25s ease, transform .25s ease; }
     .step:last-child { border-bottom:none; }
     .step.cur { opacity:1; }
     .step.hide { display:none; }
@@ -108,17 +97,33 @@
     .who.r1 { background:var(--ink); color:var(--canvas); border-color:var(--ink); }
     .who.r2 { border-color:var(--ink); color:var(--ink); }
     .step p { margin:0; color:var(--ink); font-size:14px; }
-    .step .sub { color:var(--ink-muted); font-size:13px; margin-top:2px; }
     .step.good p { color:var(--ok); font-weight:600; }
     .step.bad p { color:var(--bad); font-weight:600; }
     .walk-f { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 18px; border-top:1px solid var(--border); background:var(--surface-subtle); font-size:12px; color:var(--ink-muted); }
-    .walk-controls { display:flex; align-items:center; gap:8px; }
+    .walk-controls { display:flex; align-items:center; gap:6px; }
+    .run { background:var(--ink); color:var(--canvas); border:none; font:500 12px var(--font-sans); padding:5px 12px; border-radius:6px; cursor:pointer; transition:opacity .15s; }
+    .run:hover { opacity:.9; }
     .run.alt { background:var(--surface); color:var(--ink); border:1px solid var(--border); }
-    .run.play { display:inline-flex; align-items:center; gap:5px; background:var(--ink); color:var(--canvas); }
-    .run.play.playing { background:#2563eb; color:#fff; }
+    .run.play.playing { background:var(--ink-secondary); color:var(--canvas); }
     .run:disabled { opacity:.35; cursor:default; }
     .progress-bar-wrap { width:100%; height:3px; background:var(--border); }
     .progress-bar { height:100%; width:0%; background:var(--ink); transition:width .25s ease; }
+    /* implemented solution transition overlay */
+    .fix-banner {
+      position:absolute; inset:0; z-index:5;
+      background:color-mix(in srgb,var(--surface) 94%,transparent);
+      backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      text-align:center; padding:24px;
+      opacity:0; pointer-events:none; transition:opacity .3s ease;
+    }
+    .fix-banner.show { opacity:1; pointer-events:auto; }
+    .fix-pill { font:500 11px var(--font-mono); color:var(--ok); border:1px solid color-mix(in srgb,var(--ok) 45%,var(--border)); background:var(--surface); padding:3px 10px; border-radius:4px; margin-bottom:10px; transform:translateY(6px); transition:transform .3s ease; }
+    .fix-banner.show .fix-pill { transform:translateY(0); }
+    .fix-banner h4 { font-size:18px; font-weight:600; color:var(--ink); margin-bottom:4px; transform:translateY(6px); transition:transform .3s ease .04s; }
+    .fix-banner.show h4 { transform:translateY(0); }
+    .fix-banner p { font-family:var(--font-mono); font-size:12.5px; color:var(--ink-secondary); margin:0; transform:translateY(6px); transition:transform .3s ease .08s; }
+    .fix-banner.show p { transform:translateY(0); }
     @media (max-width:520px) { .step { grid-template-columns:1fr; gap:4px; } .who { width:fit-content; } }
     footer { margin-top:56px; padding-top:20px; border-top:1px solid var(--border); font-size:13px; color:var(--ink-muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
   </style>
@@ -129,7 +134,6 @@
     <a class="logo" href="#">Ledger Service</a>
     <div class="nav-right">
       <a class="nav-link" href="#problems">Problems</a>
-      <a class="nav-link" href="#demo">Demo</a>
       <a class="nav-link" href="#how">How it works</a>
       <a class="nav-link" href="#api">API</a>
       <a class="nav-link" href="https://github.com/LaxExe/ledger-service" target="_blank" rel="noopener">GitHub</a>
@@ -147,38 +151,72 @@
     </p>
     <div class="actions">
       <a class="btn primary" href="https://github.com/LaxExe/ledger-service" target="_blank" rel="noopener">View on GitHub</a>
-      <a class="btn" href="#demo">Run the demo</a>
+      <a class="btn" href="#problems">Run the demo</a>
     </div>
     <div class="cmd"><div class="t"><span class="p">$</span><span id="c1">docker compose up -d &amp;&amp; ./mvnw spring-boot:run</span></div><button class="copy" data-t="c1">Copy</button></div>
     <div class="cmd"><div class="t"><span class="p">$</span><span id="c2">curl -i http://localhost:8080/health</span></div><button class="copy" data-t="c2">Copy</button></div>
   </section>
 
   <h2 id="problems">Problems &amp; how they were addressed</h2>
-  <p>When multiple services or clients transfer money, small race conditions cause lost funds, deadlocks, or duplicate debits. Here is how each failure mode was handled:</p>
+  <p>Click any row in the table to watch the failure happen step by step, followed immediately by the implemented fix.</p>
+
   <div class="tbl"><table>
-    <tr><th>Problem</th><th>What happens</th><th>How it was addressed</th></tr>
-    <tr><td><strong>Lost updates</strong></td><td>Concurrent transfers read the same initial balance, decrement it, and overwrite each other. Withdrawals vanish.</td><td><strong>Pessimistic row locking</strong> (<code>SELECT ... FOR UPDATE</code> via <code>@Lock(PESSIMISTIC_WRITE)</code>). Transactions queue until the lock releases.</td></tr>
-    <tr><td><strong>Deadlock cycles</strong></td><td>Alice sends to Bob while Bob sends to Alice. Each grabs one lock and waits indefinitely for the other.</td><td><strong>Ordered lock acquisition</strong>. The lower account ID is always locked first regardless of sender/receiver, eliminating circular waits.</td></tr>
-    <tr><td><strong>Duplicate retries</strong></td><td>Network timeouts cause client retries, executing an already-completed transfer twice.</td><td><strong>Idempotency keys</strong> with a unique DB constraint. Returns cached transfers immediately; caught duplicate inserts safely yield the winner.</td></tr>
-    <tr><td><strong>Rounding drift</strong></td><td>Floating point types (<code>float</code>, <code>double</code>) introduce inexact fractional cent rounding over time.</td><td><strong>Integer cent math</strong> stored in 64-bit <code>Long</code> fields (e.g. <code>balanceCents</code>, <code>amountCents</code>).</td></tr>
-    <tr><td><strong>Untracked balance changes</strong></td><td>Balances update in place without an audit trail of why the money shifted.</td><td><strong>Double-entry records</strong>. Every transfer writes two balanced immutable <code>ledger_entries</code> rows (debit + credit) summing to zero.</td></tr>
+    <tr><th>Problem</th><th>What goes wrong</th><th>How I fixed it</th><th>Demo</th></tr>
+    <tr class="prob-row active-row" data-prob="0">
+      <td><strong>Lost updates</strong></td>
+      <td>Two concurrent withdrawals read the same starting balance and overwrite each other.</td>
+      <td>Row lock via <code>select ... for update</code> so the second transfer waits until the first commits.</td>
+      <td><button class="tbl-btn" data-prob="0">Watch demo</button></td>
+    </tr>
+    <tr class="prob-row" data-prob="1">
+      <td><strong>Deadlock cycles</strong></td>
+      <td>Alice pays Bob while Bob pays Alice; each locks one row and waits on the other forever.</td>
+      <td>Always lock the lower account id first (<code>Math.min</code>), so every request locks in the same order.</td>
+      <td><button class="tbl-btn" data-prob="1">Watch demo</button></td>
+    </tr>
+    <tr class="prob-row" data-prob="2">
+      <td><strong>Duplicate retries</strong></td>
+      <td>A dropped network reply makes the client retry a transfer that already went through.</td>
+      <td><code>Idempotency-Key</code> header checked before running, returning the saved transfer on retry.</td>
+      <td><button class="tbl-btn" data-prob="2">Watch demo</button></td>
+    </tr>
+    <tr class="prob-row" data-prob="3">
+      <td><strong>Same-instant duplicates</strong></td>
+      <td>Two copies of the same request arrive together and both pass the initial lookup check.</td>
+      <td>Unique constraint on <code>idempotency_key</code> catches the race and returns the winner's row.</td>
+      <td><button class="tbl-btn" data-prob="3">Watch demo</button></td>
+    </tr>
+    <tr class="prob-row" data-prob="4">
+      <td><strong>Rounding &amp; balance drift</strong></td>
+      <td>Decimals lose fractions of a cent, and updating a single column leaves no audit trail.</td>
+      <td>Store whole cents as <code>Long</code> and write paired <code>-amount</code> and <code>+amount</code> ledger entries.</td>
+      <td><button class="tbl-btn" data-prob="4">Watch demo</button></td>
+    </tr>
   </table></div>
 
-  <h2 id="demo">Interactive walkthrough</h2>
-  <p>Select any scenario below. Hit <strong>Play</strong> for an automatic walkthrough, or step through manually. These visual steps replicate the exact logic executed against PostgreSQL.</p>
-
-  <div class="walk" id="walk">
-    <div class="tabs" id="tabs"></div>
-    <div class="case">
+  <div class="walk" id="demo">
+    <div class="case" id="caseBox">
       <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
-      <div class="case-top"><h3 id="caseTitle"></h3><p id="caseIntro"></p></div>
+      <div class="fix-banner" id="fixBanner">
+        <span class="fix-pill">Solution applied</span>
+        <h4 id="fixBannerTitle"></h4>
+        <p id="fixBannerCode"></p>
+      </div>
+      <div class="case-top">
+        <div class="case-head">
+          <span class="case-badge" id="caseBadge"></span>
+          <h3 id="caseTitle"></h3>
+        </div>
+        <p id="caseIntro"></p>
+      </div>
       <div class="state" id="state"></div>
       <ol class="steps" id="steps"></ol>
       <div class="walk-f">
         <span id="stepCount"></span>
         <div class="walk-controls">
+          <button class="run alt" id="modeToggle">Switch to fix</button>
           <button class="run alt" id="back">Back</button>
-          <button class="run play" id="playBtn">&#9654; Play</button>
+          <button class="run play" id="playBtn">Play</button>
           <button class="run" id="next">Next</button>
         </div>
       </div>
@@ -195,17 +233,17 @@
         │
         ▼
 [ TransferService ]
-   1. key already in DB?  ── yes ──► return the stored transfer
+   1. key already in db?  ── yes ──► return the stored transfer
         │ no
         ▼
-   2. BEGIN
-   3. lock account min(from, to)   SELECT ... FOR UPDATE
-   4. lock account max(from, to)   SELECT ... FOR UPDATE
+   2. begin transaction
+   3. lock account min(from, to)   select ... for update
+   4. lock account max(from, to)   select ... for update
    5. balance &gt;= amount?  ── no ──► 400, rollback
    6. debit, credit
    7. insert transfer (unique idempotency_key)
    8. insert ledger entry -amount, +amount
-   9. COMMIT
+   9. commit
         │
         ▼  unique violation at step 7 or 9? read the winner's row</pre>
 
@@ -216,7 +254,7 @@
 
   <h3>2. Row locking</h3>
   <p>
-    Reading a balance, checking it and saving it back is a race. <code>findByIdForUpdate</code> in <code>AccountRepository</code> uses <code>@Lock(PESSIMISTIC_WRITE)</code>, which becomes <code>SELECT ... FOR UPDATE</code> in SQL. If another transfer touches the same account, it waits until the first one is done.
+    Reading a balance, checking it and saving it back is a race. <code>findByIdForUpdate</code> in <code>AccountRepository</code> uses <code>@Lock(PESSIMISTIC_WRITE)</code>, which becomes <code>select ... for update</code> in SQL. If another transfer touches the same account, it waits until the first one is done.
   </p>
 <div class="code-title">AccountRepository.java</div>
 <pre class="code"><span class="kw">@Lock</span>(LockModeType.PESSIMISTIC_WRITE)
@@ -299,123 +337,263 @@ Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(...);
     navigator.clipboard.writeText(document.getElementById(b.dataset.t).textContent);
     b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1200);
   });
-  const CASES = [
-    { group: 'Problem', tab: '1. Lost update', title: 'Two withdrawals at the same time, no lock',
-      intro: 'Alice has $50. Two requests each want to take $1 out, and they arrive together.',
-      state: ['Alice\'s balance'],
-      steps: [
-        { who: 'start', t: 'Nothing has happened yet.', s: ['$50'] },
-        { who: 'r1', t: 'Request 1 reads Alice\'s balance and sees $50.', s: ['$50'] },
-        { who: 'r2', t: 'Request 2 reads Alice\'s balance too. Request 1 hasn\'t saved anything yet, so it also sees $50.', s: ['$50'] },
-        { who: 'r1', t: 'Request 1 works out 50 - 1 = 49 and saves $49.', s: ['$49'] },
-        { who: 'r2', t: 'Request 2 works out 50 - 1 = 49, using the old number it read earlier, and saves $49.', s: ['$49'] },
-        { who: 'end', tone: 'bad', t: 'Two $1 withdrawals went through, but Alice only lost $1. It should say $48. One dollar disappeared.' } ] },
-    { group: 'Fix', tab: '2. Row lock', title: 'The same two withdrawals, with a row lock',
-      intro: 'Same situation, but now a request has to lock Alice\'s row before it reads her balance (SELECT ... FOR UPDATE).',
-      state: ['Alice\'s balance', 'Lock on Alice'],
-      steps: [
-        { who: 'start', t: 'Nothing has happened yet.', s: ['$50', 'free'] },
-        { who: 'r1', t: 'Request 1 asks for the lock on Alice and gets it. It reads $50.', s: ['$50', 'Request 1'] },
-        { who: 'r2', t: 'Request 2 asks for the same lock. It is taken, so Request 2 waits.', s: ['$50', 'Request 1 (Request 2 waiting)'] },
-        { who: 'r1', t: 'Request 1 saves $49, finishes and releases the lock.', s: ['$49', 'free'] },
-        { who: 'r2', t: 'Request 2 finally gets the lock. Now it reads $49, the up to date number.', s: ['$49', 'Request 2'] },
-        { who: 'r2', t: 'Request 2 saves $48 and releases the lock.', s: ['$48', 'free'] },
-        { who: 'end', tone: 'good', t: 'Alice has $48, which is right. The requests took turns instead of overlapping.' } ] },
-    { group: 'Problem', tab: '3. Deadlock', title: 'Two transfers in opposite directions',
-      intro: 'Request 1 sends $10 from Alice to Bob. Request 2 sends $5 from Bob to Alice. Each one locks the sender first, then the receiver.',
-      state: ['Lock on Alice', 'Lock on Bob'],
-      steps: [
-        { who: 'start', t: 'Nothing has happened yet.', s: ['free', 'free'] },
-        { who: 'r1', t: 'Request 1 locks Alice, because she is the sender.', s: ['Request 1', 'free'] },
-        { who: 'r2', t: 'Request 2 locks Bob, because he is its sender.', s: ['Request 1', 'Request 2'] },
-        { who: 'r1', t: 'Request 1 now needs Bob\'s lock. Request 2 has it, so Request 1 waits.', s: ['Request 1', 'Request 2'] },
-        { who: 'r2', t: 'Request 2 now needs Alice\'s lock. Request 1 has it, so Request 2 waits.', s: ['Request 1', 'Request 2'] },
-        { who: 'end', tone: 'bad', t: 'Each request is waiting for the other one. Neither can ever continue. This is a deadlock. PostgreSQL will cancel one of them with an error.' } ] },
-    { group: 'Fix', tab: '4. Lock order', title: 'The same transfers, always locking the lowest id first',
-      intro: 'Alice is account 1 and Bob is account 2. The rule in TransferService: lock the account with the lower id first, no matter who is sending.',
-      state: ['Lock on Alice (1)', 'Lock on Bob (2)'],
-      steps: [
-        { who: 'start', t: 'Nothing has happened yet.', s: ['free', 'free'] },
-        { who: 'r1', t: 'Request 1 locks Alice (id 1) first.', s: ['Request 1', 'free'] },
-        { who: 'r2', t: 'Request 2 also has to lock Alice first, even though Bob is sending. She is taken, so it waits. It has not touched Bob.', s: ['Request 1', 'free'] },
-        { who: 'r1', t: 'Request 1 locks Bob, moves the $10, and releases both locks.', s: ['free', 'free'] },
-        { who: 'r2', t: 'Request 2 gets Alice, then Bob, moves its $5, and finishes.', s: ['Request 2', 'Request 2'] },
-        { who: 'end', tone: 'good', t: 'Both transfers finished. Nobody waited in a circle, because everyone asks for locks in the same order.' } ] },
-    { group: 'Problem', tab: '5. Retry', title: 'A retry with no idempotency key',
-      intro: 'A client sends "pay Bob $25". The server does it, but the reply gets lost on the way back.',
-      state: ['Alice\'s balance', 'Transfers saved'],
-      steps: [
-        { who: 'start', t: 'Alice has $100 and nothing has been sent.', s: ['$100', '0'] },
-        { who: 'r1', t: 'The client sends: pay Bob $25.', s: ['$100', '0'] },
-        { who: 'db', t: 'The server moves the money and saves the transfer.', s: ['$75', '1'] },
-        { who: 'db', t: 'The reply is lost in the network. The client never hears back.', s: ['$75', '1'] },
-        { who: 'r1', t: 'The client times out and sends the exact same request again. It has no way to know the first one worked.', s: ['$75', '1'] },
-        { who: 'db', t: 'The server sees a normal request and moves $25 again.', s: ['$50', '2'] },
-        { who: 'end', tone: 'bad', t: 'Alice was charged twice for one payment.' } ] },
-    { group: 'Fix', tab: '6. Idempotency key', title: 'The same retry, with an Idempotency-Key',
-      intro: 'Now the client attaches a unique key to the request, like Idempotency-Key: abc-123, and sends the same key on every retry.',
-      state: ['Alice\'s balance', 'Transfers saved'],
-      steps: [
-        { who: 'start', t: 'Alice has $100 and nothing has been sent.', s: ['$100', '0'] },
-        { who: 'r1', t: 'The client sends: pay Bob $25, key abc-123.', s: ['$100', '0'] },
-        { who: 'db', t: 'The server moves the money and saves the transfer together with the key abc-123.', s: ['$75', '1'] },
-        { who: 'db', t: 'The reply is lost in the network.', s: ['$75', '1'] },
-        { who: 'r1', t: 'The client retries with the same key, abc-123.', s: ['$75', '1'] },
-        { who: 'db', t: 'The server looks up abc-123, finds the transfer it already saved, and sends that back. It moves no money.', s: ['$75', '1'] },
-        { who: 'end', tone: 'good', t: 'Alice was charged once, and the client still got an answer.' } ] },
-    { group: 'Fix', tab: '7. Exact same moment', title: 'Two identical requests at the very same moment',
-      intro: 'The lookup in case 6 is not enough by itself. If both copies arrive together, both can look before either one saves. This is what the unique constraint is for.',
-      state: ['Alice\'s balance', 'Transfers saved'],
-      steps: [
-        { who: 'start', t: 'Alice has $100. Two copies of "pay Bob $25, key abc-123" arrive at once.', s: ['$100', '0'] },
-        { who: 'r1', t: 'Request 1 looks for abc-123. Not found, so it carries on.', s: ['$100', '0'] },
-        { who: 'r2', t: 'Request 2 looks for abc-123. Also not found, because Request 1 has not saved yet.', s: ['$100', '0'] },
-        { who: 'r1', t: 'Request 1 saves its transfer with key abc-123.', s: ['$75', '1'] },
-        { who: 'r2', t: 'Request 2 tries to save a transfer with the same key. The database refuses, because the key column must be unique. Request 2\'s changes are rolled back.', s: ['$75', '1'] },
-        { who: 'r2', t: 'The code catches that error, reads the transfer Request 1 saved, and returns it.', s: ['$75', '1'] },
-        { who: 'end', tone: 'good', t: 'Only one transfer exists and Alice was charged once. The database itself guarantees it, even when the timing is bad.' } ] }
+
+  const SCENARIOS = [
+    {
+      name: 'Lost updates',
+      fixTitle: 'Implementing pessimistic row lock',
+      fixCode: 'AccountRepository.findByIdForUpdate -> select ... for update',
+      problem: {
+        badge: 'Problem: no lock',
+        title: 'Two withdrawals at the same time, no lock',
+        intro: 'Alice has $50. Two requests each want to take $1 out, and they arrive together.',
+        state: ['Alice\'s balance'],
+        steps: [
+          { who: 'start', t: 'Nothing has happened yet.', s: ['$50'] },
+          { who: 'r1', t: 'Request 1 reads Alice\'s balance and sees $50.', s: ['$50'] },
+          { who: 'r2', t: 'Request 2 reads Alice\'s balance too. Request 1 hasn\'t saved anything yet, so it also sees $50.', s: ['$50'] },
+          { who: 'r1', t: 'Request 1 works out 50 - 1 = 49 and saves $49.', s: ['$49'] },
+          { who: 'r2', t: 'Request 2 works out 50 - 1 = 49, using the old number it read earlier, and saves $49.', s: ['$49'] },
+          { who: 'end', tone: 'bad', t: 'Two $1 withdrawals went through, but Alice only lost $1. It should say $48. One dollar disappeared.' }
+        ]
+      },
+      fix: {
+        badge: 'Fix: row lock',
+        title: 'The same two withdrawals, with a row lock',
+        intro: 'Now a request locks Alice\'s row before reading her balance (select ... for update).',
+        state: ['Alice\'s balance', 'Lock on Alice'],
+        steps: [
+          { who: 'start', t: 'Nothing has happened yet.', s: ['$50', 'free'] },
+          { who: 'r1', t: 'Request 1 asks for the lock on Alice and gets it. It reads $50.', s: ['$50', 'Request 1'] },
+          { who: 'r2', t: 'Request 2 asks for the same lock. It is taken, so Request 2 waits.', s: ['$50', 'Request 1 (Request 2 waiting)'] },
+          { who: 'r1', t: 'Request 1 saves $49, finishes and releases the lock.', s: ['$49', 'free'] },
+          { who: 'r2', t: 'Request 2 finally gets the lock. Now it reads $49, the updated balance.', s: ['$49', 'Request 2'] },
+          { who: 'r2', t: 'Request 2 saves $48 and releases the lock.', s: ['$48', 'free'] },
+          { who: 'end', tone: 'good', t: 'Alice has $48, which is right. The requests took turns instead of overlapping.' }
+        ]
+      }
+    },
+    {
+      name: 'Deadlock cycles',
+      fixTitle: 'Implementing ordered lock acquisition',
+      fixCode: 'Math.min(fromId, toId) -> always lock lower account id first',
+      problem: {
+        badge: 'Problem: deadlock',
+        title: 'Two transfers in opposite directions',
+        intro: 'Request 1 sends $10 from Alice to Bob. Request 2 sends $5 from Bob to Alice. Each locks the sender first.',
+        state: ['Lock on Alice', 'Lock on Bob'],
+        steps: [
+          { who: 'start', t: 'Nothing has happened yet.', s: ['free', 'free'] },
+          { who: 'r1', t: 'Request 1 locks Alice, because she is the sender.', s: ['Request 1', 'free'] },
+          { who: 'r2', t: 'Request 2 locks Bob, because he is its sender.', s: ['Request 1', 'Request 2'] },
+          { who: 'r1', t: 'Request 1 now needs Bob\'s lock. Request 2 has it, so Request 1 waits.', s: ['Request 1', 'Request 2'] },
+          { who: 'r2', t: 'Request 2 now needs Alice\'s lock. Request 1 has it, so Request 2 waits.', s: ['Request 1', 'Request 2'] },
+          { who: 'end', tone: 'bad', t: 'Each request is waiting on the other forever. PostgreSQL has to abort one with an error.' }
+        ]
+      },
+      fix: {
+        badge: 'Fix: ordered locks',
+        title: 'The same transfers, always locking the lowest id first',
+        intro: 'Alice is account 1 and Bob is account 2. Both requests must lock account 1 before account 2.',
+        state: ['Lock on Alice (1)', 'Lock on Bob (2)'],
+        steps: [
+          { who: 'start', t: 'Nothing has happened yet.', s: ['free', 'free'] },
+          { who: 'r1', t: 'Request 1 locks Alice (id 1) first.', s: ['Request 1', 'free'] },
+          { who: 'r2', t: 'Request 2 also tries to lock Alice (id 1) first, even though Bob is sending. She is taken, so it waits.', s: ['Request 1', 'free'] },
+          { who: 'r1', t: 'Request 1 locks Bob, moves the $10, and releases both locks.', s: ['free', 'free'] },
+          { who: 'r2', t: 'Request 2 gets Alice, then Bob, moves its $5, and finishes.', s: ['Request 2', 'Request 2'] },
+          { who: 'end', tone: 'good', t: 'Both transfers finished cleanly because everyone acquires locks in the exact same order.' }
+        ]
+      }
+    },
+    {
+      name: 'Duplicate retries',
+      fixTitle: 'Implementing Idempotency-Key lookup',
+      fixCode: 'transferRepository.findByIdempotencyKey(key)',
+      problem: {
+        badge: 'Problem: retry without key',
+        title: 'A network timeout triggers a retry',
+        intro: 'A client sends "pay Bob $25". The server completes it, but the response drops on the network.',
+        state: ['Alice\'s balance', 'Transfers saved'],
+        steps: [
+          { who: 'start', t: 'Alice has $100 and nothing has been sent.', s: ['$100', '0'] },
+          { who: 'r1', t: 'The client sends: pay Bob $25.', s: ['$100', '0'] },
+          { who: 'db', t: 'The server moves the money and saves the transfer.', s: ['$75', '1'] },
+          { who: 'db', t: 'The reply is lost in the network. The client never hears back.', s: ['$75', '1'] },
+          { who: 'r1', t: 'The client times out and sends the exact same request again.', s: ['$75', '1'] },
+          { who: 'db', t: 'The server treats it as a brand new transfer and moves $25 again.', s: ['$50', '2'] },
+          { who: 'end', tone: 'bad', t: 'Alice was charged $50 for a single $25 payment.' }
+        ]
+      },
+      fix: {
+        badge: 'Fix: idempotency key',
+        title: 'The same retry, with an Idempotency-Key header',
+        intro: 'The client attaches Idempotency-Key: abc-123 and reuses that key when retrying.',
+        state: ['Alice\'s balance', 'Transfers saved'],
+        steps: [
+          { who: 'start', t: 'Alice has $100 and nothing has been sent.', s: ['$100', '0'] },
+          { who: 'r1', t: 'The client sends: pay Bob $25, key abc-123.', s: ['$100', '0'] },
+          { who: 'db', t: 'The server moves the money and saves the transfer with key abc-123.', s: ['$75', '1'] },
+          { who: 'db', t: 'The reply is lost in the network.', s: ['$75', '1'] },
+          { who: 'r1', t: 'The client retries with the same key, abc-123.', s: ['$75', '1'] },
+          { who: 'db', t: 'The server finds abc-123 in the database and returns the saved transfer without moving money.', s: ['$75', '1'] },
+          { who: 'end', tone: 'good', t: 'Alice was charged once, and the client got its confirmation.' }
+        ]
+      }
+    },
+    {
+      name: 'Same-instant duplicates',
+      fixTitle: 'Implementing unique constraint recovery',
+      fixCode: 'catch (DataIntegrityViolationException) -> return winner row',
+      problem: {
+        badge: 'Problem: check-then-act race',
+        title: 'Two identical requests arrive at the exact same millisecond',
+        intro: 'If two copies with key abc-123 arrive together, a simple lookup check before inserting isn\'t enough.',
+        state: ['Alice\'s balance', 'Transfers saved'],
+        steps: [
+          { who: 'start', t: 'Alice has $100. Two identical requests with key abc-123 arrive together.', s: ['$100', '0'] },
+          { who: 'r1', t: 'Request 1 checks if abc-123 exists. Not yet, so it proceeds.', s: ['$100', '0'] },
+          { who: 'r2', t: 'Request 2 also checks if abc-123 exists. Request 1 hasn\'t committed yet, so Request 2 also proceeds.', s: ['$100', '0'] },
+          { who: 'r1', t: 'Request 1 debits $25 and inserts a transfer.', s: ['$75', '1'] },
+          { who: 'r2', t: 'Without a unique database constraint, Request 2 also debits $25 and inserts a second transfer.', s: ['$50', '2'] },
+          { who: 'end', tone: 'bad', t: 'Both requests slipped past the application check and Alice was charged twice.' }
+        ]
+      },
+      fix: {
+        badge: 'Fix: unique constraint',
+        title: 'Database unique constraint catches the race',
+        intro: 'The transfers table enforces a unique constraint on idempotency_key, and the service catches the collision.',
+        state: ['Alice\'s balance', 'Transfers saved'],
+        steps: [
+          { who: 'start', t: 'Alice has $100. Both requests with key abc-123 arrive at once.', s: ['$100', '0'] },
+          { who: 'r1', t: 'Request 1 checks for abc-123, sees nothing, and starts.', s: ['$100', '0'] },
+          { who: 'r2', t: 'Request 2 also checks for abc-123, sees nothing, and starts.', s: ['$100', '0'] },
+          { who: 'r1', t: 'Request 1 saves its transfer with key abc-123 first.', s: ['$75', '1'] },
+          { who: 'r2', t: 'Request 2 tries to insert key abc-123. PostgreSQL rejects it with a unique constraint error and rolls back Request 2.', s: ['$75', '1'] },
+          { who: 'r2', t: 'TransferService catches DataIntegrityViolationException, queries key abc-123, and returns Request 1\'s transfer.', s: ['$75', '1'] },
+          { who: 'end', tone: 'good', t: 'Only one transfer was committed and both callers received the same result.' }
+        ]
+      }
+    },
+    {
+      name: 'Rounding & balance drift',
+      fixTitle: 'Implementing integer cents & double-entry ledger',
+      fixCode: 'Long amountCents + paired LedgerEntry(-amount, +amount)',
+      problem: {
+        badge: 'Problem: floats & single column',
+        title: 'Floating-point math and untracked balance updates',
+        intro: 'Using double for dollars and updating balances in place without ledger entries.',
+        state: ['Alice', 'Bob', 'Audit sum'],
+        steps: [
+          { who: 'start', t: 'Alice has $10.00, Bob has $0.00.', s: ['$10.00', '$0.00', 'none'] },
+          { who: 'r1', t: 'Three transfers of $0.10 run using floating-point doubles (0.1 + 0.2 = 0.30000000000000004).', s: ['$9.70', '$0.30000000000000004', 'none'] },
+          { who: 'db', t: 'Balances are overwritten directly on the accounts table with no record of individual debits or credits.', s: ['$9.70', '$0.30000000000000004', 'none'] },
+          { who: 'end', tone: 'bad', t: 'Fractional rounding errors accumulate and there is no audit trail to verify where money came from.' }
+        ]
+      },
+      fix: {
+        badge: 'Fix: integer cents & double-entry',
+        title: 'Whole cents in a Long and paired debit/credit entries',
+        intro: 'All amounts are integer cents, and every transfer writes two immutable ledger_entries rows.',
+        state: ['Alice (cents)', 'Bob (cents)', 'Ledger sum'],
+        steps: [
+          { who: 'start', t: 'Alice has 1000 cents ($10.00), Bob has 0 cents.', s: ['1000', '0', '0'] },
+          { who: 'r1', t: 'Transfer 30 cents from Alice to Bob.', s: ['970', '30', '0'] },
+          { who: 'db', t: 'Insert debit entry (-30) for Alice and credit entry (+30) for Bob.', s: ['970', '30', '-30 + 30 = 0'] },
+          { who: 'end', tone: 'good', t: 'Exact integer math with zero rounding error, and every cent is accounted for in ledger_entries.' }
+        ]
+      }
+    }
   ];
 
   const WHO = { start: ['Setup', ''], r1: ['Request 1', 'r1'], r2: ['Request 2', 'r2'], db: ['Server', ''], end: ['Result', ''] };
-  const tabsEl = document.getElementById('tabs'), stepsEl = document.getElementById('steps'), stateEl = document.getElementById('state');
-  const backB = document.getElementById('back'), nextB = document.getElementById('next'), playB = document.getElementById('playBtn');
-  const progressBar = document.getElementById('progressBar');
-  let cur = 0, step = 0, lastGroup = '', playTimer = null;
+  const stepsEl = document.getElementById('steps'), stateEl = document.getElementById('state');
+  const backB = document.getElementById('back'), nextB = document.getElementById('next'), playB = document.getElementById('playBtn'), modeB = document.getElementById('modeToggle');
+  const progressBar = document.getElementById('progressBar'), caseBox = document.getElementById('caseBox');
+  const fixBanner = document.getElementById('fixBanner'), fixBannerTitle = document.getElementById('fixBannerTitle'), fixBannerCode = document.getElementById('fixBannerCode');
+  const caseBadge = document.getElementById('caseBadge');
+  const probRows = [...document.querySelectorAll('.prob-row')];
 
-  CASES.forEach((c, i) => {
-    if (c.group !== lastGroup) { tabsEl.insertAdjacentHTML('beforeend', `<span class="grp">${c.group === 'Problem' ? 'Problems' : 'Fixes'}</span>`); lastGroup = c.group; }
-    const b = document.createElement('button'); b.className = 'tab'; b.textContent = c.tab;
-    b.onclick = () => { stopPlay(); cur = i; step = 0; render(); }; tabsEl.appendChild(b);
-  });
+  let curProb = 0, phase = 'problem', step = 0, playTimer = null, bannerTimer = null;
 
-  function stopPlay() {
-    if (playTimer) {
-      clearInterval(playTimer);
-      playTimer = null;
-      playB.innerHTML = '&#9654; Play';
-      playB.classList.remove('playing');
-    }
+  function activeCase() {
+    return SCENARIOS[curProb][phase];
+  }
+
+  function clearTimers() {
+    if (playTimer) { clearInterval(playTimer); playTimer = null; }
+    if (bannerTimer) { clearTimeout(bannerTimer); bannerTimer = null; }
+    fixBanner.classList.remove('show');
+    playB.textContent = 'Play';
+    playB.classList.remove('playing');
+  }
+
+  function showFixTransition(thenStartPlay) {
+    if (playTimer) { clearInterval(playTimer); playTimer = null; }
+    const sc = SCENARIOS[curProb];
+    fixBannerTitle.textContent = sc.fixTitle;
+    fixBannerCode.textContent = sc.fixCode;
+    fixBanner.classList.add('show');
+    bannerTimer = setTimeout(() => {
+      fixBanner.classList.remove('show');
+      phase = 'fix';
+      step = 0;
+      render();
+      if (thenStartPlay) startPlay();
+    }, 1500);
   }
 
   function startPlay() {
-    playB.innerHTML = '&#10074;&#10074; Pause';
+    playB.textContent = 'Pause';
     playB.classList.add('playing');
     playTimer = setInterval(() => {
-      const c = CASES[cur];
+      const c = activeCase();
       if (step < c.steps.length - 1) {
         step++;
         render();
+      } else if (phase === 'problem') {
+        showFixTransition(true);
       } else {
-        stopPlay();
+        clearTimers();
       }
-    }, 1800);
+    }, 1500);
   }
 
-  playB.onclick = () => {
-    if (playTimer) {
-      stopPlay();
+  function selectProblem(idx, autoPlay) {
+    clearTimers();
+    curProb = idx;
+    phase = 'problem';
+    step = 0;
+    render();
+    if (autoPlay) startPlay();
+  }
+
+  probRows.forEach((row, idx) => {
+    row.onclick = (e) => {
+      selectProblem(idx, true);
+      document.getElementById('demo').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+  });
+
+  modeB.onclick = () => {
+    clearTimers();
+    if (phase === 'problem') {
+      showFixTransition(true);
     } else {
-      if (step === CASES[cur].steps.length - 1) {
+      phase = 'problem';
+      step = 0;
+      render();
+      startPlay();
+    }
+  };
+
+  playB.onclick = () => {
+    if (playTimer || bannerTimer) {
+      clearTimers();
+    } else {
+      const c = activeCase();
+      if (step === c.steps.length - 1) {
+        if (phase === 'fix') phase = 'problem';
         step = 0;
         render();
       }
@@ -424,10 +602,19 @@ Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(...);
   };
 
   function render() {
-    const c = CASES[cur];
-    [...tabsEl.querySelectorAll('.tab')].forEach((b, i) => b.classList.toggle('on', i === cur));
+    const c = activeCase();
+    probRows.forEach((r, i) => {
+      r.classList.toggle('active-row', i === curProb);
+      const btn = r.querySelector('.tbl-btn');
+      if (btn) btn.textContent = i === curProb ? (phase === 'problem' ? 'Playing problem' : 'Playing fix') : 'Watch demo';
+    });
+    caseBox.classList.toggle('is-fix', phase === 'fix');
+    caseBadge.textContent = c.badge;
+    caseBadge.className = 'case-badge ' + (phase === 'problem' ? 'bad' : 'good');
     document.getElementById('caseTitle').textContent = c.title;
     document.getElementById('caseIntro').textContent = c.intro;
+    modeB.textContent = phase === 'problem' ? 'Skip to fix' : 'Replay problem';
+
     stepsEl.innerHTML = c.steps.map((st, i) => {
       const w = WHO[st.who];
       return `<li class="step ${i === step ? 'cur' : ''} ${i > step ? 'hide' : ''} ${st.tone || ''}"><span class="who ${w[1]}">${w[0]}</span><p>${st.t}</p></li>`;
@@ -435,20 +622,34 @@ Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(...);
     const now = c.steps[step].s || c.steps[step - 1].s, prev = step ? (c.steps[step - 1].s || now) : now;
     const vals = c.steps[step].s || prev;
     stateEl.innerHTML = c.state.map((l, k) => `<span class="chip">${l}<b class="${vals[k] !== prev[k] ? 'changed' : ''}">${vals[k]}</b></span>`).join('');
-    document.getElementById('stepCount').textContent = `Step ${step + 1} of ${c.steps.length}`;
-    const pct = ((step + 1) / c.steps.length) * 100;
-    progressBar.style.width = pct + '%';
-    backB.disabled = step === 0;
-    nextB.textContent = step === c.steps.length - 1 ? (cur < CASES.length - 1 ? 'Next case' : 'Restart') : 'Next';
+    document.getElementById('stepCount').textContent = `${phase === 'problem' ? 'Problem' : 'Fix'} — Step ${step + 1} of ${c.steps.length}`;
+    progressBar.style.width = (((step + 1) / c.steps.length) * 100) + '%';
+    backB.disabled = step === 0 && phase === 'problem';
+    nextB.textContent = step === c.steps.length - 1 ? (phase === 'problem' ? 'Apply fix' : 'Next problem') : 'Next';
   }
 
-  backB.onclick = () => { stopPlay(); if (step > 0) { step--; render(); } };
-  nextB.onclick = () => {
-    stopPlay();
-    if (step < CASES[cur].steps.length - 1) step++;
-    else { cur = (cur + 1) % CASES.length; step = 0; }
-    render();
+  backB.onclick = () => {
+    clearTimers();
+    if (step > 0) { step--; render(); }
+    else if (phase === 'fix') { phase = 'problem'; step = SCENARIOS[curProb].problem.steps.length - 1; render(); }
   };
+
+  nextB.onclick = () => {
+    clearTimers();
+    const c = activeCase();
+    if (step < c.steps.length - 1) {
+      step++;
+      render();
+    } else if (phase === 'problem') {
+      showFixTransition(false);
+    } else {
+      curProb = (curProb + 1) % SCENARIOS.length;
+      phase = 'problem';
+      step = 0;
+      render();
+    }
+  };
+
   render();
 </script>
 </body>
