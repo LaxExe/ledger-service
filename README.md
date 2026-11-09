@@ -1,54 +1,56 @@
 # Ledger Service
 
-A double-entry ledger REST API built with Java 21, Spring Boot 3 and PostgreSQL 16. It moves money between accounts without losing updates under parallel requests and without double-charging on retries.
+A small banking API I built to learn how money moves safely in a database. You can create accounts and transfer money between them. It uses Java 21, Spring Boot and PostgreSQL.
 
-Site with interactive demos: **https://laxexe.github.io/ledger-service/**
+I wanted to get two things right: what happens when a lot of requests hit the same account at once, and what happens when a client retries a request that already went through.
+
+Demo page: https://laxexe.github.io/ledger-service/
 
 ## Run it
 
 You need Docker and Java 21.
 
 ```bash
-docker compose up -d          # PostgreSQL 16 on :5432
-./mvnw spring-boot:run        # API on :8080
+docker compose up -d
+./mvnw spring-boot:run
 curl -i http://localhost:8080/health
 ```
 
-Run the tests with `./mvnw clean test`. The integration tests need the database running.
+Tests: `./mvnw clean test` (the database has to be running).
 
 ## The two problems
 
-**Lost updates.** Two threads read a balance of $50, both subtract $1 and both write $49. One withdrawal disappears. This happens whenever read, check and write are separate steps with no lock.
+**Lost updates.** Two requests read a balance of $50. Both take $1 off and both save $49. Two withdrawals happened but the balance only dropped once.
 
-**Duplicate charges.** A client sends a transfer, the response is lost, and the client retries. Without a guard the server runs it twice.
+**Double charges.** A client sends a transfer, the response gets lost, so it sends the same transfer again. If the server just runs it, the money moves twice.
 
-## How it works
+## How I fixed them
 
-One service method, `TransferService.transfer`, runs the whole transfer in a single transaction:
+All of it happens in `TransferService.transfer`, inside one transaction:
 
-1. If the `Idempotency-Key` already exists, return the stored transfer.
-2. Lock both accounts with `SELECT ... FOR UPDATE`, lower id first.
-3. Reject the transfer if the sender's balance is too low.
-4. Debit the sender, credit the receiver.
-5. Insert the transfer row, then two ledger entries (`-amount` and `+amount`).
+1. If we've already seen this `Idempotency-Key`, return the old transfer and stop.
+2. Lock both accounts with `SELECT ... FOR UPDATE`, lowest id first.
+3. Check the sender has enough money.
+4. Subtract from one account, add to the other.
+5. Save the transfer and two ledger entries, one negative and one positive.
 
-Details of each piece:
+Some notes on why:
 
-- **Double entry.** Every transfer has one `transfers` row and two `ledger_entries` rows. Amounts are integer cents, so there is no rounding error.
-- **Row locking.** `AccountRepository.findByIdForUpdate` uses `@Lock(PESSIMISTIC_WRITE)`. A second transaction on the same account waits for the first to commit.
-- **Lock ordering.** Transfers A→B and B→A running together could each hold one lock and wait forever. Always locking the lower id first removes the cycle.
-- **Idempotency.** `transfers.idempotency_key` has a unique constraint. The lookup in step 1 is only a fast path, because two identical requests can both miss it. When the second insert hits the constraint, the service catches `DataIntegrityViolationException` and returns the first request's transfer.
+- **Two ledger entries.** Every transfer is saved as a debit and a credit, so all entries always add up to zero. Amounts are whole cents (a `Long`), not decimals, to avoid rounding.
+- **Row locks.** `findByIdForUpdate` in `AccountRepository` locks the row. A second transfer on that account waits until the first one commits.
+- **Lowest id first.** If Alice sends to Bob while Bob sends to Alice, each could grab one lock and wait on the other forever. Locking in the same order every time stops that.
+- **Idempotency key.** The `transfers` table has a unique constraint on the key. The check in step 1 isn't enough on its own, since two identical requests can both pass it at the same moment. So the service also catches the constraint error from the database and returns the transfer that won.
 
 ## API
 
-| Endpoint | Description | Success |
+| Endpoint | What it does | Success |
 |---|---|---|
-| `POST /accounts` | Create an account | 201 with `Location` |
-| `GET /accounts/{id}` | Read an account | 200 |
-| `POST /transfers` | Move money, requires `Idempotency-Key` | 201 |
-| `GET /health` | Liveness check | 200 `ok` |
+| `POST /accounts` | Create an account | 201 |
+| `GET /accounts/{id}` | Get an account | 200 |
+| `POST /transfers` | Move money (needs `Idempotency-Key`) | 201 |
+| `GET /health` | Is it up | 200 |
 
-Errors are JSON with `timestamp`, `status`, `error` and `message`. Unknown accounts return 404. Insufficient funds, a missing header, a same-account transfer or a non-positive amount return 400.
+Errors come back as JSON. Unknown account is a 404. Not enough money, missing header, same account on both sides, or an amount of zero or less is a 400.
 
 ```bash
 curl -X POST http://localhost:8080/accounts \
@@ -61,36 +63,33 @@ curl -X POST http://localhost:8080/transfers \
   -d '{"fromAccountId": 1, "toAccountId": 2, "amountCents": 2500}'
 ```
 
-Sending the second request again with the same key returns the same transfer and moves no money.
+Run that second command twice. The second time you get the same transfer back and no extra money moves.
 
 ## Tests
 
-24 `@Test` methods. The ones that matter most run against a real PostgreSQL:
+There are 24 tests. The important ones use a real PostgreSQL:
 
-| Test | What it checks |
-|---|---|
-| `ConcurrentTransferIntegrationTest` | 50 transfers on 16 threads lose no updates. 60 random transfers keep the total constant and no balance negative. |
-| `IdempotencyIntegrationTest` | 10 parallel requests with one key create exactly one transfer. |
-| `TransferIntegrationTest`, `TransferServiceTest` | Balances, transfer rows and ledger entries. |
-| Controller tests | Validation and error responses. |
+- `ConcurrentTransferIntegrationTest` fires 50 transfers from 16 threads and checks nothing is lost. A second test does 60 random transfers and checks the total stays the same and no balance goes negative.
+- `IdempotencyIntegrationTest` sends 10 identical requests at once and checks only one transfer is created.
+- The rest cover the service, the controllers and validation.
 
-CI runs `./mvnw clean verify` on every push and pull request, with a PostgreSQL 16 service container. The site in `docs/` deploys to GitHub Pages from `main`.
+GitHub Actions runs `./mvnw clean verify` on every push, with a Postgres container.
 
-## Layout
+## Project layout
 
 ```
 src/main/java/com/example/ledger/
-  controller/   HTTP endpoints
+  controller/   endpoints
   service/      TransferService, AccountService
-  repository/   Spring Data JPA, including the locking query
+  repository/   database access, including the locking query
   domain/       Account, Transfer, LedgerEntry
-  dto/          request and response records
-  exception/    error types and GlobalExceptionHandler
-docs/index.html   the GitHub Pages site
+  dto/          request and response types
+  exception/    errors and the global handler
+docs/index.html   the demo site
 ```
 
-The `stage-1-accounts` to `stage-4-idempotency` branches show the project as it was built: accounts, transfers, locking, then idempotency.
+The `stage-1` to `stage-4` branches are the steps I built it in: accounts, transfers, locking, then idempotency.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

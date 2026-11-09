@@ -104,9 +104,9 @@
 <main>
   <section>
     <p class="meta">Java 21, Spring Boot 3.3, PostgreSQL 16</p>
-    <h1>A ledger that stays correct under concurrency.</h1>
+    <h1>A ledger that doesn't lose money.</h1>
     <p class="lead">
-      A small REST API that moves money between accounts as double-entry records. Two things can go wrong with that: parallel requests overwrite each other, and retried requests charge twice. This project handles both, and the tests try to break it.
+      This is a small API I wrote that moves money between accounts. Two things tend to go wrong with that: requests at the same time overwrite each other, and a retried request charges someone twice. I fixed both, and wrote tests that try to break it.
     </p>
     <div class="actions">
       <a class="btn primary" href="https://github.com/LaxExe/ledger-service" target="_blank" rel="noopener">View on GitHub</a>
@@ -118,7 +118,7 @@
 
   <h2 id="demo">Try breaking it</h2>
   <p>
-    These simulations model the two failure modes in JavaScript. They are illustrations of the logic, not calls to a live server. The real versions run against PostgreSQL in the integration tests.
+    These two demos run in your browser and just mimic the problems. They don't talk to a real server. The real versions run against PostgreSQL in the tests.
   </p>
 
   <div class="sim" id="simLost">
@@ -130,7 +130,7 @@
       <div class="log" id="logLost">Alice starts with $50.00. Fire 50 withdrawals of $1.00 from 8 threads.</div>
       <div class="result"><span>Expected <b id="lostExp">$0.00</b></span><span>Actual <b id="lostAct">&mdash;</b></span><span>Vanished <b id="lostGone">&mdash;</b></span></div>
     </div>
-    <div class="sim-f"><span>Threads read the balance, then write it back. Without a lock, they read the same value.</span><button class="run" id="runLost">Run</button></div>
+    <div class="sim-f"><span>Each thread reads the balance, then writes it back. Without a lock they read the same number.</span><button class="run" id="runLost">Run</button></div>
   </div>
 
   <div class="sim" id="simIdem">
@@ -142,11 +142,11 @@
       <div class="log" id="logIdem">Send the same $25.00 transfer 10 times at once, as a client retrying a timeout would.</div>
       <div class="result"><span>Transfers recorded <b id="idemN">&mdash;</b></span><span>Alice charged <b id="idemAmt">&mdash;</b></span></div>
     </div>
-    <div class="sim-f"><span>With a key, the unique constraint lets one insert win. The rest get that transfer back.</span><button class="run" id="runIdem">Run</button></div>
+    <div class="sim-f"><span>With a key, only the first insert works. The rest get that transfer back.</span><button class="run" id="runIdem">Run</button></div>
   </div>
 
   <h2 id="how">How it works</h2>
-  <p>A transfer goes through one service method, in one database transaction.</p>
+  <p>Every transfer goes through one method and runs in one database transaction.</p>
 
 <pre class="diagram">POST /transfers   Idempotency-Key: abc-123
         │
@@ -171,12 +171,12 @@
 
   <h3>1. Double-entry records</h3>
   <p>
-    Each transfer writes one <code>transfers</code> row and two <code>ledger_entries</code> rows, one negative and one positive. Amounts are stored as integer cents in a <code>Long</code>, so there is no floating point rounding. Summing every entry always gives zero.
+    Each transfer saves one row in <code>transfers</code> and two in <code>ledger_entries</code>, one negative and one positive. Amounts are whole cents stored in a <code>Long</code>, so no decimal rounding. If you add up every entry you always get zero.
   </p>
 
   <h3>2. Row locking</h3>
   <p>
-    Reading a balance, checking it and writing it back is a race. <code>AccountRepository</code> exposes <code>findByIdForUpdate</code>, annotated with <code>@Lock(PESSIMISTIC_WRITE)</code>, which Hibernate turns into <code>SELECT ... FOR UPDATE</code>. A second transaction on the same account waits until the first commits.
+    Reading a balance, checking it and saving it back is a race. <code>findByIdForUpdate</code> in <code>AccountRepository</code> uses <code>@Lock(PESSIMISTIC_WRITE)</code>, which becomes <code>SELECT ... FOR UPDATE</code> in SQL. If another transfer touches the same account, it waits until the first one is done.
   </p>
 <div class="code-title">AccountRepository.java</div>
 <pre class="code"><span class="kw">@Lock</span>(LockModeType.PESSIMISTIC_WRITE)
@@ -185,7 +185,7 @@ Optional&lt;Account&gt; findByIdForUpdate(<span class="kw">@Param</span>(<span c
 
   <h3>3. Lock ordering</h3>
   <p>
-    Locks alone can deadlock: if A&rarr;B and B&rarr;A run together, each can hold one row and wait for the other. <code>TransferService</code> always locks the lower account id first, so every transaction takes locks in the same order and a cycle cannot form.
+    Locks can deadlock. If Alice sends to Bob while Bob sends to Alice, each one can grab a lock and wait for the other forever. The fix is simple: always lock the lower account id first. Everyone takes locks in the same order, so nobody ends up waiting in a circle.
   </p>
 <div class="code-title">TransferService.java</div>
 <pre class="code">Long firstId  = Math.<span class="kw">min</span>(request.fromAccountId(), request.toAccountId());
@@ -196,7 +196,7 @@ Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(...);
 
   <h3>4. Idempotency</h3>
   <p>
-    The client sends an <code>Idempotency-Key</code> header. <code>transfers.idempotency_key</code> has a unique constraint. A lookup first returns an existing transfer quickly, but two identical requests can both miss that lookup. The constraint settles it: one insert wins, the other gets a <code>DataIntegrityViolationException</code>, and the service catches it and returns the winner's row.
+    The client sends an <code>Idempotency-Key</code> header, and the <code>transfers</code> table has a unique constraint on it. I check for an existing transfer first, but two identical requests can both pass that check at the same time. So the database makes the final call: one insert works, the other throws a <code>DataIntegrityViolationException</code>, and I catch it and return the first transfer.
   </p>
 <div class="code-title">TransferService.java</div>
 <pre class="code"><span class="kw">try</span> {
@@ -209,16 +209,16 @@ Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(...);
 }</pre>
 
   <h2>What the tests check</h2>
-  <p>The suite has 24 <code>@Test</code> methods across unit, web-layer and integration tests. The concurrency ones run against a real PostgreSQL.</p>
+  <p>There are 24 tests. The ones about concurrency run against a real PostgreSQL.</p>
   <div class="tbl"><table>
     <tr><th>Property</th><th>Test</th></tr>
     <tr><td>No lost updates</td><td><code>ConcurrentTransferIntegrationTest</code>: 50 transfers on a 16-thread pool</td></tr>
-    <tr><td>Money is conserved, no negative balances</td><td>Same class: 60 random transfers between several accounts, 16 threads</td></tr>
+    <tr><td>Total stays the same, no negative balances</td><td>Same class: 60 random transfers, 16 threads</td></tr>
     <tr><td>One transfer per key</td><td><code>IdempotencyIntegrationTest</code>: 10 parallel requests, same key</td></tr>
-    <tr><td>Transfers and ledger entries</td><td><code>TransferIntegrationTest</code>, <code>TransferServiceTest</code></td></tr>
-    <tr><td>Validation and error shapes</td><td>Controller tests with MockMvc</td></tr>
+    <tr><td>Balances and ledger entries</td><td><code>TransferIntegrationTest</code>, <code>TransferServiceTest</code></td></tr>
+    <tr><td>Validation and errors</td><td>Controller tests</td></tr>
   </table></div>
-  <p>CI runs <code>./mvnw clean verify</code> on every push and pull request, with a PostgreSQL 16 service container.</p>
+  <p>GitHub Actions runs all of them on every push, with a Postgres container.</p>
 
   <h2 id="api">API</h2>
   <div class="tbl"><table>
@@ -228,7 +228,7 @@ Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(...);
     <tr><td><code>POST /transfers</code></td><td>Move money. Requires <code>Idempotency-Key</code></td><td>201</td></tr>
     <tr><td><code>GET /health</code></td><td>Liveness check</td><td>200 <code>ok</code></td></tr>
   </table></div>
-  <p>Failures return JSON with <code>timestamp</code>, <code>status</code>, <code>error</code> and <code>message</code>. Unknown accounts give 404. Insufficient funds, a missing header, a same-account transfer or a non-positive amount give 400.</p>
+  <p>Errors come back as JSON. An unknown account is a 404. Not enough money, a missing header, the same account on both sides, or an amount of zero or less is a 400.</p>
 <div class="code-title">POST /transfers</div>
 <pre class="code">curl -X POST http://localhost:8080/transfers \
   -H <span class="str">"Content-Type: application/json"</span> \
@@ -236,7 +236,7 @@ Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(...);
   -d <span class="str">'{"fromAccountId": 1, "toAccountId": 2, "amountCents": 2500}'</span></pre>
 
   <h2>Run it</h2>
-  <p>You need Docker and Java 21. <code>docker-compose.yml</code> starts PostgreSQL 16 on port 5432 and the app connects with the settings in <code>application.properties</code>. Run <code>./mvnw clean test</code> for the tests (they need the database running).</p>
+  <p>You need Docker and Java 21. <code>docker compose up -d</code> starts Postgres, then <code>./mvnw spring-boot:run</code> starts the app. To run the tests use <code>./mvnw clean test</code> with the database running.</p>
 
   <footer>
     <span>MIT License</span>
