@@ -1,6 +1,8 @@
 # Ledger Service
 
-A small banking API I built to learn how money moves safely in a database. You can create accounts and transfer money between them. It uses Java 21, Spring Boot and PostgreSQL.
+Built using Java 21, Spring Boot 3.3, PostgreSQL 16.
+
+A small banking API I built to learn how money moves safely in a database. You can create accounts and transfer money between them.
 
 I wanted to get two things right: what happens when a lot of requests hit the same account at once, and what happens when a client retries a request that already went through.
 
