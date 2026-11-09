@@ -3,1039 +3,324 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ledger Service &mdash; Concurrent & Idempotent Financial Ledger</title>
-  <meta name="description" content="A robust, double-entry banking ledger REST API built with Java 21, Spring Boot, and PostgreSQL. Solves lost updates and duplicate requests under heavy concurrent load.">
-
+  <title>Ledger Service &mdash; Double-entry ledger API in Spring Boot</title>
+  <meta name="description" content="A double-entry ledger REST API in Java 21, Spring Boot and PostgreSQL. Row locking, ordered lock acquisition and database-enforced idempotency.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --canvas: #fafafa;
-      --surface: #ffffff;
-      --surface-subtle: #f5f5f5;
-      --border: #ebebeb;
-      --border-hover: #d4d4d4;
-      --ink: #171717;
-      --ink-secondary: #525252;
-      --ink-muted: #737373;
-      --ink-disabled: #a8a8a8;
-      --code-bg: #f5f5f5;
-      --accent: #2563eb;
-      --accent-subtle: #eff6ff;
-      --success: #16a34a;
-      --success-subtle: #f0fdf4;
-      --danger: #dc2626;
-      --danger-subtle: #fef2f2;
-      --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+      --canvas:#fafafa; --surface:#fff; --surface-subtle:#f5f5f5; --border:#ebebeb; --border-hover:#d4d4d4;
+      --ink:#171717; --ink-secondary:#525252; --ink-muted:#737373; --ink-disabled:#a8a8a8; --code-bg:#f5f5f5;
+      --ok:#16a34a; --bad:#dc2626;
+      --font-sans:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+      --font-mono:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
     }
-
     [data-theme="dark"] {
-      --canvas: #0a0a0a;
-      --surface: #121212;
-      --surface-subtle: #1a1a1a;
-      --border: #262626;
-      --border-hover: #404040;
-      --ink: #ededed;
-      --ink-secondary: #a1a1a1;
-      --ink-muted: #737373;
-      --ink-disabled: #525252;
-      --code-bg: #171717;
-      --accent: #3b82f6;
-      --accent-subtle: #172554;
-      --success: #22c55e;
-      --success-subtle: #052e16;
-      --danger: #ef4444;
-      --danger-subtle: #450a0a;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: var(--font-sans);
-      font-size: 15px;
-      line-height: 1.7;
-      background-color: var(--canvas);
-      color: var(--ink);
-      -webkit-font-smoothing: antialiased;
-      transition: background-color 0.15s ease, color 0.15s ease;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    /* Minimal Top Navigation */
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background-color: rgba(250, 250, 250, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      transition: background-color 0.15s ease, border-color 0.15s ease;
-    }
-
-    [data-theme="dark"] header {
-      background-color: rgba(10, 10, 10, 0.85);
-    }
-
-    .nav-inner {
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 0 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 52px;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      font-size: 15px;
-      letter-spacing: -0.01em;
-    }
-
-    .logo-mark {
-      font-family: var(--font-mono);
-      font-size: 13px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: var(--surface-subtle);
-      border: 1px solid var(--border);
-    }
-
-    .nav-right {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .nav-link {
-      font-size: 13px;
-      color: var(--ink-secondary);
-      transition: color 0.15s ease;
-    }
-
-    .nav-link:hover {
-      color: var(--ink);
-    }
-
-    .theme-btn {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--ink-secondary);
-      width: 30px;
-      height: 30px;
-      border-radius: 9999px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.15s ease;
-    }
-
-    .theme-btn:hover {
-      color: var(--ink);
-      border-color: var(--border-hover);
-      background-color: var(--surface);
-    }
-
-    .theme-btn svg {
-      width: 14px;
-      height: 14px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 2;
-    }
-
-    /* Container */
-    .container {
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 48px 20px 80px;
-    }
-
-    /* Hero Section */
-    .hero {
-      margin-bottom: 36px;
-    }
-
-    .badge-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 12px;
-      font-family: var(--font-mono);
-      padding: 3px 9px;
-      border-radius: 9999px;
-      border: 1px solid var(--border);
-      background-color: var(--surface);
-      color: var(--ink-secondary);
-    }
-
-    .badge-success {
-      background-color: var(--success-subtle);
-      border-color: rgba(22, 163, 74, 0.2);
-      color: var(--success);
-    }
-
-    .hero-title {
-      font-size: 36px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin-bottom: 12px;
-      color: var(--ink);
-    }
-
-    .hero-desc {
-      font-size: 16.5px;
-      line-height: 1.6;
-      color: var(--ink-secondary);
-      margin-bottom: 24px;
-    }
-
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 24px;
-    }
-
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background-color: var(--ink);
-      color: var(--canvas);
-      font-size: 13.5px;
-      font-weight: 500;
-      padding: 8px 18px;
-      border-radius: 9999px;
-      transition: all 0.15s ease;
-    }
-
-    .btn-primary:hover {
-      opacity: 0.9;
-    }
-
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      background-color: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--ink);
-      font-size: 13.5px;
-      font-weight: 500;
-      padding: 8px 16px;
-      border-radius: 9999px;
-      transition: all 0.15s ease;
-    }
-
-    .btn-secondary:hover {
-      border-color: var(--border-hover);
-      background-color: var(--surface-subtle);
-    }
-
-    /* Terminal Commands Box */
-    .cmd-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 40px;
-    }
-
-    .cmd-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      background-color: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 9px 14px;
-      font-family: var(--font-mono);
-      font-size: 13px;
-    }
-
-    .cmd-text {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      overflow-x: auto;
-      white-space: nowrap;
-      color: var(--ink);
-    }
-
-    .cmd-prompt {
-      color: var(--ink-disabled);
-      user-select: none;
-    }
-
-    .btn-copy {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--ink-secondary);
-      font-family: var(--font-sans);
-      font-size: 11px;
-      font-weight: 500;
-      padding: 3px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      flex-shrink: 0;
-    }
-
-    .btn-copy:hover {
-      color: var(--ink);
-      border-color: var(--border-hover);
-      background-color: var(--surface-subtle);
-    }
-
-    /* Interactive Simulator */
-    .simulator-card {
-      background-color: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 48px;
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
-    }
-
-    .sim-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .sim-title {
-      font-size: 16px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .accounts-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    @media (max-width: 600px) {
-      .accounts-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .account-box {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px;
-      background: var(--surface-subtle);
-    }
-
-    .account-name {
-      font-size: 13px;
-      color: var(--ink-secondary);
-      margin-bottom: 4px;
-    }
-
-    .account-balance {
-      font-size: 26px;
-      font-weight: 700;
-      font-family: var(--font-mono);
-      color: var(--ink);
-    }
-
-    .account-cents {
-      font-size: 12px;
-      font-family: var(--font-mono);
-      color: var(--ink-muted);
-    }
-
-    .sim-controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-
-    .sim-btn {
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--ink);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s ease;
-    }
-
-    .sim-btn:hover {
-      background: var(--surface-subtle);
-      border-color: var(--border-hover);
-    }
-
-    .sim-btn-danger {
-      color: var(--danger);
-      border-color: rgba(220, 38, 38, 0.3);
-      background: var(--danger-subtle);
-    }
-
-    .sim-log {
-      background: var(--code-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 14px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      max-height: 180px;
-      overflow-y: auto;
-      line-height: 1.5;
-    }
-
-    .sim-log-entry {
-      margin-bottom: 4px;
-      display: flex;
-      gap: 8px;
-    }
-
-    .sim-time {
-      color: var(--ink-muted);
-    }
-
-    /* Section Styling */
-    .section-title {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin: 40px 0 16px;
-      color: var(--ink);
-    }
-
-    .section-desc {
-      font-size: 15px;
-      color: var(--ink-secondary);
-      margin-bottom: 24px;
-    }
-
-    /* Cards Grid */
-    .feature-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-
-    @media (max-width: 600px) {
-      .feature-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .card {
-      background-color: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 20px;
-      transition: border-color 0.15s ease;
-    }
-
-    .card:hover {
-      border-color: var(--border-hover);
-    }
-
-    .card-title {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: var(--ink);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .card-desc {
-      font-size: 13.5px;
-      color: var(--ink-secondary);
-      line-height: 1.6;
-    }
-
-    /* Invariant Table */
-    .table-wrapper {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow-x: auto;
-      margin-bottom: 32px;
-      background: var(--surface);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13.5px;
-      text-align: left;
-    }
-
-    th {
-      background-color: var(--surface-subtle);
-      padding: 10px 16px;
-      font-weight: 600;
-      border-bottom: 1px solid var(--border);
-      color: var(--ink);
-    }
-
-    td {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      color: var(--ink-secondary);
-    }
-
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    code {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      background: var(--code-bg);
-      padding: 2px 5px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      color: var(--ink);
-    }
-
-    /* Accordion */
-    .accordion {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 40px;
-    }
-
-    .accordion-item {
-      background-color: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .accordion-header {
-      padding: 14px 18px;
-      font-size: 14.5px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      user-select: none;
-    }
-
-    .accordion-header:hover {
-      background-color: var(--surface-subtle);
-    }
-
-    .accordion-content {
-      padding: 0 18px 16px;
-      font-size: 13.5px;
-      color: var(--ink-secondary);
-      line-height: 1.6;
-      display: none;
-    }
-
-    .accordion-item.open .accordion-content {
-      display: block;
-    }
-
-    .accordion-icon {
-      font-size: 12px;
-      transition: transform 0.2s ease;
-    }
-
-    .accordion-item.open .accordion-icon {
-      transform: rotate(180deg);
-    }
-
-    /* Footer */
-    footer {
-      border-top: 1px solid var(--border);
-      padding-top: 32px;
-      margin-top: 60px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      font-size: 13px;
-      color: var(--ink-muted);
-    }
-
-    .footer-links {
-      display: flex;
-      gap: 16px;
-    }
-
-    .footer-links a:hover {
-      color: var(--ink);
-    }
+      --canvas:#0a0a0a; --surface:#121212; --surface-subtle:#1a1a1a; --border:#262626; --border-hover:#404040;
+      --ink:#ededed; --ink-secondary:#a1a1a1; --ink-muted:#737373; --ink-disabled:#525252; --code-bg:#171717;
+      --ok:#4ade80; --bad:#f87171;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:var(--font-sans); font-size:15px; line-height:1.7; background:var(--canvas); color:var(--ink); -webkit-font-smoothing:antialiased; }
+    a { color:inherit; text-decoration:none; }
+    header { position:sticky; top:0; z-index:10; background:color-mix(in srgb,var(--canvas) 85%,transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); }
+    .nav-inner { max-width:720px; margin:0 auto; padding:0 20px; height:52px; display:flex; align-items:center; justify-content:space-between; }
+    .logo { font-weight:600; letter-spacing:-.01em; }
+    .logo span { font-family:var(--font-mono); font-size:13px; margin-right:6px; }
+    .nav-right { display:flex; align-items:center; gap:16px; }
+    .nav-link { font-size:13px; color:var(--ink-secondary); }
+    .nav-link:hover { color:var(--ink); }
+    .theme-btn { background:none; border:1px solid var(--border); color:var(--ink-secondary); width:30px; height:30px; border-radius:6px; cursor:pointer; font-size:12px; }
+    .theme-btn:hover { border-color:var(--border-hover); color:var(--ink); }
+    main { max-width:720px; margin:0 auto; padding:48px 20px 80px; }
+    .meta { font-family:var(--font-mono); font-size:12px; color:var(--ink-muted); margin-bottom:10px; }
+    h1 { font-size:32px; font-weight:700; letter-spacing:-.03em; line-height:1.15; margin-bottom:12px; }
+    .lead { font-size:16px; color:var(--ink-secondary); margin-bottom:24px; }
+    h2 { font-size:22px; font-weight:600; letter-spacing:-.02em; margin:48px 0 12px; }
+    h3 { font-size:16px; font-weight:600; margin:32px 0 8px; }
+    p { color:var(--ink-secondary); margin-bottom:14px; }
+    p strong { color:var(--ink); font-weight:600; }
+    code { font-family:var(--font-mono); font-size:13px; background:var(--code-bg); border:1px solid var(--border); padding:1px 4px; border-radius:4px; color:var(--ink); }
+    ul.plain { margin:0 0 14px 20px; color:var(--ink-secondary); }
+    ul.plain li { margin-bottom:4px; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; }
+    .btn { display:inline-flex; align-items:center; font-size:13.5px; font-weight:500; padding:8px 18px; border-radius:6px; border:1px solid var(--border); background:var(--surface); }
+    .btn:hover { border-color:var(--border-hover); }
+    .btn.primary { background:var(--ink); color:var(--canvas); border-color:var(--ink); }
+    .cmd { display:flex; justify-content:space-between; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-family:var(--font-mono); font-size:12.5px; margin-bottom:8px; }
+    .cmd .t { overflow-x:auto; white-space:nowrap; }
+    .cmd .p { color:var(--ink-disabled); margin-right:8px; user-select:none; }
+    .copy { background:none; border:1px solid var(--border); color:var(--ink-secondary); font:500 11px var(--font-sans); padding:3px 8px; border-radius:4px; cursor:pointer; }
+    .copy:hover { color:var(--ink); border-color:var(--border-hover); }
+    pre { font-family:var(--font-mono); font-size:12px; line-height:1.5; border:1px solid var(--border); border-radius:8px; padding:14px 16px; overflow-x:auto; margin:14px 0 20px; color:var(--ink); }
+    pre.diagram { background:var(--surface); }
+    pre.code { background:var(--code-bg); }
+    .code-title { font-family:var(--font-mono); font-size:11px; color:var(--ink-muted); margin-top:14px; }
+    .code-title + pre { margin-top:6px; }
+    .kw { color:#8b5cf6; font-weight:600; } .cm { color:#737373; } .str { color:#059669; }
+    [data-theme="dark"] .kw { color:#c084fc; } [data-theme="dark"] .str { color:#34d399; }
+    .metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin:20px 0 28px; }
+    .metric { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; }
+    .metric b { display:block; font-family:var(--font-mono); font-size:18px; }
+    .metric span { font-size:11.5px; color:var(--ink-muted); }
+    .tbl { overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:var(--surface); margin:16px 0 24px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { text-align:left; padding:8px 12px; border-bottom:1px solid var(--border); vertical-align:top; color:var(--ink-secondary); }
+    th { font-weight:500; color:var(--ink); background:var(--surface-subtle); }
+    tr:last-child td { border-bottom:none; }
+    td code { white-space:nowrap; }
+    /* simulator */
+    .sim { background:var(--surface); border:1px solid var(--border); border-radius:10px; margin:0 0 20px; overflow:hidden; }
+    .sim-h { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 14px; background:var(--surface-subtle); border-bottom:1px solid var(--border); font-size:12px; font-weight:500; color:var(--ink-secondary); }
+    .seg { display:flex; gap:2px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:2px; }
+    .seg button { background:none; border:none; font:500 11px var(--font-sans); color:var(--ink-secondary); padding:2px 8px; border-radius:4px; cursor:pointer; }
+    .seg button.on { background:var(--ink); color:var(--canvas); }
+    .sim-b { padding:14px 16px; }
+    .sim-f { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:8px 14px; background:var(--surface-subtle); border-top:1px solid var(--border); font-size:11.5px; color:var(--ink-muted); }
+    .run { background:var(--ink); color:var(--canvas); border:none; font:500 12px var(--font-sans); padding:5px 14px; border-radius:6px; cursor:pointer; }
+    .run:hover { opacity:.9; }
+    .log { font-family:var(--font-mono); font-size:12px; line-height:1.6; min-height:132px; max-height:220px; overflow-y:auto; color:var(--ink-secondary); }
+    .log .ok { color:var(--ok); } .log .bad { color:var(--bad); }
+    .result { display:flex; gap:24px; flex-wrap:wrap; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); font-family:var(--font-mono); font-size:12px; }
+    .result b { color:var(--ink); }
+    footer { margin-top:56px; padding-top:20px; border-top:1px solid var(--border); font-size:13px; color:var(--ink-muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
   </style>
 </head>
 <body>
-
-  <!-- Navigation -->
-  <header>
-    <div class="nav-inner">
-      <div class="logo">
-        <span class="logo-mark">LS</span>
-        <span>Ledger Service</span>
-      </div>
-      <div class="nav-right">
-        <a href="#simulator" class="nav-link">Simulator</a>
-        <a href="#invariants" class="nav-link">Invariants</a>
-        <a href="#api" class="nav-link">API</a>
-        <a href="#interview" class="nav-link">Interview Guide</a>
-        <a href="https://github.com/LaxExe/ledger-service" target="_blank" class="nav-link">GitHub</a>
-        <button class="theme-btn" id="themeToggle" aria-label="Toggle theme">
-          <svg viewBox="0 0 24 24" id="sunIcon"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-        </button>
-      </div>
+<header>
+  <div class="nav-inner">
+    <a class="logo" href="#">Ledger Service</a>
+    <div class="nav-right">
+      <a class="nav-link" href="#demo">Demo</a>
+      <a class="nav-link" href="#how">How it works</a>
+      <a class="nav-link" href="#api">API</a>
+      <a class="nav-link" href="https://github.com/LaxExe/ledger-service" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" id="theme" aria-label="Toggle theme">Aa</button>
     </div>
-  </header>
+  </div>
+</header>
 
-  <div class="container">
+<main>
+  <section>
+    <p class="meta">Java 21, Spring Boot 3.3, PostgreSQL 16</p>
+    <h1>A ledger that stays correct under concurrency.</h1>
+    <p class="lead">
+      A small REST API that moves money between accounts as double-entry records. Two things can go wrong with that: parallel requests overwrite each other, and retried requests charge twice. This project handles both, and the tests try to break it.
+    </p>
+    <div class="actions">
+      <a class="btn primary" href="https://github.com/LaxExe/ledger-service" target="_blank" rel="noopener">View on GitHub</a>
+      <a class="btn" href="#demo">Run the demo</a>
+    </div>
+    <div class="cmd"><div class="t"><span class="p">$</span><span id="c1">docker compose up -d &amp;&amp; ./mvnw spring-boot:run</span></div><button class="copy" data-t="c1">Copy</button></div>
+    <div class="cmd"><div class="t"><span class="p">$</span><span id="c2">curl -i http://localhost:8080/health</span></div><button class="copy" data-t="c2">Copy</button></div>
+  </section>
 
-    <!-- Hero -->
-    <section class="hero">
-      <div class="badge-row">
-        <span class="badge badge-success">✓ 44/44 Tests Passing</span>
-        <span class="badge">Java 21</span>
-        <span class="badge">Spring Boot 3.3.5</span>
-        <span class="badge">PostgreSQL 16</span>
-        <span class="badge">Testcontainers</span>
-      </div>
-      <h1 class="hero-title">Concurrent & Idempotent Double-Entry Ledger Service</h1>
-      <p class="hero-desc">
-        A production-grade banking ledger REST API built with Java 21, Spring Boot, and PostgreSQL. It enforces strict mathematical balance conservation and remains 100% correct under high-contention race conditions and duplicate network retries.
-      </p>
+  <h2 id="demo">Try breaking it</h2>
+  <p>
+    These simulations model the two failure modes in JavaScript. They are illustrations of the logic, not calls to a live server. The real versions run against PostgreSQL in the integration tests.
+  </p>
 
-      <div class="hero-actions">
-        <a href="https://github.com/LaxExe/ledger-service" target="_blank" class="btn-primary">
-          View on GitHub
-        </a>
-        <a href="#simulator" class="btn-secondary">
-          Try Live Simulator
-        </a>
-      </div>
-
-      <!-- Quickstart Commands -->
-      <div class="cmd-group">
-        <div class="cmd-row">
-          <div class="cmd-text">
-            <span class="cmd-prompt">$</span>
-            <span>docker compose up -d</span>
-          </div>
-          <button class="btn-copy" onclick="copyText('docker compose up -d', this)">Copy</button>
-        </div>
-        <div class="cmd-row">
-          <div class="cmd-text">
-            <span class="cmd-prompt">$</span>
-            <span>./mvnw spring-boot:run</span>
-          </div>
-          <button class="btn-copy" onclick="copyText('./mvnw spring-boot:run', this)">Copy</button>
-        </div>
-        <div class="cmd-row">
-          <div class="cmd-text">
-            <span class="cmd-prompt">$</span>
-            <span>curl -i http://localhost:8080/health</span>
-          </div>
-          <button class="btn-copy" onclick="copyText('curl -i http://localhost:8080/health', this)">Copy</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Interactive Simulator -->
-    <section id="simulator">
-      <div class="simulator-card">
-        <div class="sim-header">
-          <div class="sim-title">
-            <span>⚡ Interactive Concurrency & Idempotency Simulator</span>
-          </div>
-          <button class="btn-copy" onclick="resetSimulator()">Reset State</button>
-        </div>
-
-        <div class="accounts-grid">
-          <div class="account-box">
-            <div class="account-name">Account 1 (Alice)</div>
-            <div class="account-balance" id="aliceBalance">$100.00</div>
-            <div class="account-cents" id="aliceCents">10,000 whole cents</div>
-          </div>
-          <div class="account-box">
-            <div class="account-name">Account 2 (Bob)</div>
-            <div class="account-balance" id="bobBalance">$20.00</div>
-            <div class="account-cents" id="bobCents">2,000 whole cents</div>
-          </div>
-        </div>
-
-        <div class="sim-controls">
-          <button class="sim-btn" onclick="executeNormalTransfer()">
-            Normal Transfer ($25.00 Alice &rarr; Bob)
-          </button>
-          <button class="sim-btn" onclick="executeOverdraft()">
-            Attempt Overdraft ($150.00 Alice &rarr; Bob)
-          </button>
-          <button class="sim-btn" onclick="executeConcurrentNoLock()">
-            Simulate 50 Threads Without Lock (Lost Update)
-          </button>
-          <button class="sim-btn" onclick="executeConcurrentWithLock()">
-            Simulate 50 Threads With Pessimistic Lock
-          </button>
-          <button class="sim-btn" onclick="executeParallelIdempotency()">
-            Test 10x Parallel Duplicate Key Race
-          </button>
-        </div>
-
-        <div class="sim-log" id="simLog">
-          <div class="sim-log-entry">
-            <span class="sim-time">[Ready]</span>
-            <span>PostgreSQL connection active. System balance initialized to $120.00 (12,000 cents).</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Architecture Decisions -->
-    <section>
-      <h2 class="section-title">Core Architecture & Design Decisions</h2>
-      <p class="section-desc">Key engineering patterns that keep the system correct under pressure.</p>
-
-      <div class="feature-grid">
-        <div class="card">
-          <div class="card-title">💰 Whole Cents (BIGINT)</div>
-          <div class="card-desc">
-            Never store currency as <code>float</code> or <code>double</code>. IEEE 754 binary floating-point representation causes roundoff inaccuracies (e.g. 0.1 + 0.2 = 0.30000000000000004). Whole cents in <code>BIGINT</code> eliminate all fractional drift.
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">⚖️ Double-Entry Bookkeeping</div>
-          <div class="card-desc">
-            Every transfer generates two mirrored ledger entries: a debit (<code>-amount</code>) on the sender and a credit (<code>+amount</code>) on the recipient. Summing all entries across time strictly equals zero, providing a tamper-proof audit trail.
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">🔒 Pessimistic Row Locking</div>
-          <div class="card-desc">
-            Uses <code>SELECT ... FOR UPDATE</code> at the database engine level. Unlike optimistic locking which causes retry storms on contested accounts, pessimistic locking queues transactions in serializable order.
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">🔁 Deadlock-Free Lock Hierarchy</div>
-          <div class="card-desc">
-            To prevent deadlocks when transfers cross paths (A &rarr; B vs B &rarr; A), locks are always acquired in ascending account ID order: <code>min(id1, id2)</code> before <code>max(id1, id2)</code>. Deadlock cycles are mathematically impossible.
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">🔑 Database Unique Idempotency</div>
-          <div class="card-desc">
-            Enforced by PostgreSQL's <code>UNIQUE</code> constraint on <code>idempotency_key</code>. Application checks alone fail under sub-millisecond races; the database index acts as the ultimate gatekeeper, turning collisions into cached replays.
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">🧪 Real Containerized Verification</div>
-          <div class="card-desc">
-            Tested against real PostgreSQL via Docker locally and in GitHub Actions CI. In-memory databases like H2 mask concurrency anomalies; real PostgreSQL tests prove actual row locking behavior.
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Invariants Table -->
-    <section id="invariants">
-      <h2 class="section-title">The Four Financial Invariants</h2>
-      <p class="section-desc">Every financial invariant is backed by an automated test in the repository:</p>
-
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Invariant</th>
-              <th>Enforcement Mechanism</th>
-              <th>Verifying Automated Test</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>1. Cents Only (BIGINT)</strong></td>
-              <td>Zero float arithmetic, domain validation on whole integer cents</td>
-              <td><code>AccountTest.cannotCreateAccountWithNegativeBalance</code></td>
-            </tr>
-            <tr>
-              <td><strong>2. Balanced Ledger Entries</strong></td>
-              <td>Atomic Venetian double-entry (Debit -X, Credit +X, sum == 0)</td>
-              <td><code>TransferIntegrationTest.normalTransferMovesMoney...</code></td>
-            </tr>
-            <tr>
-              <td><strong>3. Idempotent Deduplication</strong></td>
-              <td>PostgreSQL <code>UNIQUE</code> constraint on <code>idempotency_key</code></td>
-              <td><code>IdempotencyIntegrationTest.parallelDuplicateRequests...</code></td>
-            </tr>
-            <tr>
-              <td><strong>4. Invariant Balance & No Overdraft</strong></td>
-              <td>Pessimistic row locks acquired in ascending ID order</td>
-              <td><code>ConcurrentTransferIntegrationTest.parallelTransfers...</code></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- API Reference -->
-    <section id="api">
-      <h2 class="section-title">REST API Specification</h2>
-      <p class="section-desc">Simple, clean HTTP contract with strict headers and JSON payloads.</p>
-
-      <div class="card" style="margin-bottom: 16px;">
-        <div class="card-title"><code>POST /accounts</code> &mdash; Create Account</div>
-        <div class="card-desc" style="margin-bottom: 12px;">Creates a new bank account with an initial balance in whole cents.</div>
-        <div class="sim-log">
-POST /accounts
-Content-Type: application/json
-
-{
-  "owner": "Alice",
-  "initialBalanceCents": 10000
-}
-
-Response (201 Created):
-{
-  "id": 1,
-  "owner": "Alice",
-  "balanceCents": 10000
-}
-        </div>
-      </div>
-
-      <div class="card" style="margin-bottom: 16px;">
-        <div class="card-title"><code>POST /transfers</code> &mdash; Execute Idempotent Transfer</div>
-        <div class="card-desc" style="margin-bottom: 12px;">Moves funds between accounts. Requires the <code>Idempotency-Key</code> HTTP header.</div>
-        <div class="sim-log">
-POST /transfers
-Content-Type: application/json
-Idempotency-Key: b7f394c8-2b36-407f-8d7e-927b2b005e19
-
-{
-  "fromAccountId": 1,
-  "toAccountId": 2,
-  "amountCents": 2500
-}
-
-Response (201 Created):
-{
-  "id": 101,
-  "fromAccountId": 1,
-  "toAccountId": 2,
-  "amountCents": 2500,
-  "idempotencyKey": "b7f394c8-2b36-407f-8d7e-927b2b005e19",
-  "createdAt": "2026-11-07T16:00:00Z"
-}
-        </div>
-      </div>
-    </section>
-
-    <!-- Interview FAQ -->
-    <section id="interview">
-      <h2 class="section-title">Interview Deep-Dive & Master Answers</h2>
-      <p class="section-desc">Key technical topics you can speak fluently about in software engineering interviews.</p>
-
-      <div class="accordion">
-        <div class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion(this)">
-            <span>1. What is a "Lost Update" anomaly and how did you reproduce it?</span>
-            <span class="accordion-icon">&#9662;</span>
-          </div>
-          <div class="accordion-content">
-            A lost update occurs when two concurrent transactions read the same initial state (e.g., balance = $50), each calculates a new balance in memory ($49), and both write it back to the database. The second write completely overwrites and erases the first transaction's debit. In our automated test firing 50 concurrent $1 withdrawals without locking, Alice ended up with $44 instead of $0—$44 of withdrawals vanished into thin air!
-          </div>
-        </div>
-
-        <div class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion(this)">
-            <span>2. Why does sorting Account IDs prevent deadlocks?</span>
-            <span class="accordion-icon">&#9662;</span>
-          </div>
-          <div class="accordion-content">
-            Deadlocks occur when two transactions form a circular dependency: Transaction 1 locks Account A and waits for Account B, while Transaction 2 locks Account B and waits for Account A. By enforcing a strict global lock hierarchy—always locking <code>min(id1, id2)</code> before <code>max(id1, id2)</code>—both transactions must compete for the exact same lower-numbered account first. One acquires it while the other queues, making circular waits impossible.
-          </div>
-        </div>
-
-        <div class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion(this)">
-            <span>3. Why isn't a Java "if exists" check enough for idempotency?</span>
-            <span class="accordion-icon">&#9662;</span>
-          </div>
-          <div class="accordion-content">
-            Due to race conditions: if a user double-clicks submit or an automated retry hits within 2 milliseconds, both threads check <code>existsByIdempotencyKey()</code> simultaneously before either has written to the database. Both see "false", both execute the transfer, and the user is charged twice. Enforcing a <code>UNIQUE</code> constraint at the database index level guarantees atomicity; the database rejects the second insert, rolls back its transaction, and allows us to return the original receipt.
-          </div>
-        </div>
-
-        <div class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion(this)">
-            <span>4. Why use Pessimistic Locking instead of Optimistic Locking?</span>
-            <span class="accordion-icon">&#9662;</span>
-          </div>
-          <div class="accordion-content">
-            Optimistic locking (<code>@Version</code>) works well for low-contention scenarios (like editing a blog post), but on high-volume financial accounts (like a popular merchant or payroll account), dozens of threads attempt to modify the same row simultaneously. With optimistic locking, 49 out of 50 requests fail with optimistic lock exceptions and must retry in expensive loops. Pessimistic locking (<code>SELECT ... FOR UPDATE</code>) puts transactions into an orderly database queue, maximizing throughput without wasting CPU.
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer>
-      <div class="footer-links">
-        <a href="https://github.com/LaxExe/ledger-service" target="_blank">GitHub Repository</a>
-        <a href="https://github.com/LaxExe/ledger-service/actions" target="_blank">CI Pipeline</a>
-        <a href="#simulator">Interactive Demo</a>
-      </div>
-      <div>Designed with clean, minimalist aesthetics inspired by Inline. Built by Lakshmanan Ramanathan.</div>
-    </footer>
-
+  <div class="sim" id="simLost">
+    <div class="sim-h">
+      <span>Lost updates</span>
+      <div class="seg"><button class="on" data-m="naive">No locking</button><button data-m="lock">Row lock</button></div>
+    </div>
+    <div class="sim-b">
+      <div class="log" id="logLost">Alice starts with $50.00. Fire 50 withdrawals of $1.00 from 8 threads.</div>
+      <div class="result"><span>Expected <b id="lostExp">$0.00</b></span><span>Actual <b id="lostAct">&mdash;</b></span><span>Vanished <b id="lostGone">&mdash;</b></span></div>
+    </div>
+    <div class="sim-f"><span>Threads read the balance, then write it back. Without a lock, they read the same value.</span><button class="run" id="runLost">Run</button></div>
   </div>
 
-  <script>
-    // Theme Switcher
-    const themeBtn = document.getElementById('themeToggle');
-    function initTheme() {
-      const saved = localStorage.getItem('theme') || 'light';
-      document.documentElement.setAttribute('data-theme', saved);
-    }
-    themeBtn.addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('theme', next);
+  <div class="sim" id="simIdem">
+    <div class="sim-h">
+      <span>Duplicate retries</span>
+      <div class="seg"><button class="on" data-m="naive">No key</button><button data-m="key">Idempotency-Key</button></div>
+    </div>
+    <div class="sim-b">
+      <div class="log" id="logIdem">Send the same $25.00 transfer 10 times at once, as a client retrying a timeout would.</div>
+      <div class="result"><span>Transfers recorded <b id="idemN">&mdash;</b></span><span>Alice charged <b id="idemAmt">&mdash;</b></span></div>
+    </div>
+    <div class="sim-f"><span>With a key, the unique constraint lets one insert win. The rest get that transfer back.</span><button class="run" id="runIdem">Run</button></div>
+  </div>
+
+  <h2 id="how">How it works</h2>
+  <p>A transfer goes through one service method, in one database transaction.</p>
+
+<pre class="diagram">POST /transfers   Idempotency-Key: abc-123
+        │
+        ▼
+[ TransferController ]  validates body and header
+        │
+        ▼
+[ TransferService ]
+   1. key already in DB?  ── yes ──► return the stored transfer
+        │ no
+        ▼
+   2. BEGIN
+   3. lock account min(from, to)   SELECT ... FOR UPDATE
+   4. lock account max(from, to)   SELECT ... FOR UPDATE
+   5. balance &gt;= amount?  ── no ──► 400, rollback
+   6. debit, credit
+   7. insert transfer (unique idempotency_key)
+   8. insert ledger entry -amount, +amount
+   9. COMMIT
+        │
+        ▼  unique violation at step 7 or 9? read the winner's row</pre>
+
+  <h3>1. Double-entry records</h3>
+  <p>
+    Each transfer writes one <code>transfers</code> row and two <code>ledger_entries</code> rows, one negative and one positive. Amounts are stored as integer cents in a <code>Long</code>, so there is no floating point rounding. Summing every entry always gives zero.
+  </p>
+
+  <h3>2. Row locking</h3>
+  <p>
+    Reading a balance, checking it and writing it back is a race. <code>AccountRepository</code> exposes <code>findByIdForUpdate</code>, annotated with <code>@Lock(PESSIMISTIC_WRITE)</code>, which Hibernate turns into <code>SELECT ... FOR UPDATE</code>. A second transaction on the same account waits until the first commits.
+  </p>
+<div class="code-title">AccountRepository.java</div>
+<pre class="code"><span class="kw">@Lock</span>(LockModeType.PESSIMISTIC_WRITE)
+<span class="kw">@Query</span>(<span class="str">"select a from Account a where a.id = :id"</span>)
+Optional&lt;Account&gt; findByIdForUpdate(<span class="kw">@Param</span>(<span class="str">"id"</span>) Long id);</pre>
+
+  <h3>3. Lock ordering</h3>
+  <p>
+    Locks alone can deadlock: if A&rarr;B and B&rarr;A run together, each can hold one row and wait for the other. <code>TransferService</code> always locks the lower account id first, so every transaction takes locks in the same order and a cycle cannot form.
+  </p>
+<div class="code-title">TransferService.java</div>
+<pre class="code">Long firstId  = Math.<span class="kw">min</span>(request.fromAccountId(), request.toAccountId());
+Long secondId = Math.<span class="kw">max</span>(request.fromAccountId(), request.toAccountId());
+
+Account first  = accountRepository.findByIdForUpdate(firstId).orElseThrow(...);
+Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(...);</pre>
+
+  <h3>4. Idempotency</h3>
+  <p>
+    The client sends an <code>Idempotency-Key</code> header. <code>transfers.idempotency_key</code> has a unique constraint. A lookup first returns an existing transfer quickly, but two identical requests can both miss that lookup. The constraint settles it: one insert wins, the other gets a <code>DataIntegrityViolationException</code>, and the service catches it and returns the winner's row.
+  </p>
+<div class="code-title">TransferService.java</div>
+<pre class="code"><span class="kw">try</span> {
+    <span class="kw">return</span> transactionTemplate.execute(s -&gt; executeTransfer(key, request));
+} <span class="kw">catch</span> (DataIntegrityViolationException e) {
+    <span class="cm">// another thread saved this key first; return its result</span>
+    <span class="kw">return</span> transferRepository.findByIdempotencyKey(key)
+            .map(TransferResponse::from)
+            .orElseThrow(() -&gt; e);
+}</pre>
+
+  <h2>What the tests check</h2>
+  <p>The suite has 24 <code>@Test</code> methods across unit, web-layer and integration tests. The concurrency ones run against a real PostgreSQL.</p>
+  <div class="tbl"><table>
+    <tr><th>Property</th><th>Test</th></tr>
+    <tr><td>No lost updates</td><td><code>ConcurrentTransferIntegrationTest</code>: 50 transfers on a 16-thread pool</td></tr>
+    <tr><td>Money is conserved, no negative balances</td><td>Same class: 60 random transfers between several accounts, 16 threads</td></tr>
+    <tr><td>One transfer per key</td><td><code>IdempotencyIntegrationTest</code>: 10 parallel requests, same key</td></tr>
+    <tr><td>Transfers and ledger entries</td><td><code>TransferIntegrationTest</code>, <code>TransferServiceTest</code></td></tr>
+    <tr><td>Validation and error shapes</td><td>Controller tests with MockMvc</td></tr>
+  </table></div>
+  <p>CI runs <code>./mvnw clean verify</code> on every push and pull request, with a PostgreSQL 16 service container.</p>
+
+  <h2 id="api">API</h2>
+  <div class="tbl"><table>
+    <tr><th>Endpoint</th><th>Description</th><th>Success</th></tr>
+    <tr><td><code>POST /accounts</code></td><td>Create an account</td><td>201 + <code>Location</code></td></tr>
+    <tr><td><code>GET /accounts/{id}</code></td><td>Read an account and its balance</td><td>200</td></tr>
+    <tr><td><code>POST /transfers</code></td><td>Move money. Requires <code>Idempotency-Key</code></td><td>201</td></tr>
+    <tr><td><code>GET /health</code></td><td>Liveness check</td><td>200 <code>ok</code></td></tr>
+  </table></div>
+  <p>Failures return JSON with <code>timestamp</code>, <code>status</code>, <code>error</code> and <code>message</code>. Unknown accounts give 404. Insufficient funds, a missing header, a same-account transfer or a non-positive amount give 400.</p>
+<div class="code-title">POST /transfers</div>
+<pre class="code">curl -X POST http://localhost:8080/transfers \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -H <span class="str">"Idempotency-Key: 7f3c1e9a-0001"</span> \
+  -d <span class="str">'{"fromAccountId": 1, "toAccountId": 2, "amountCents": 2500}'</span></pre>
+
+  <h2>Run it</h2>
+  <p>You need Docker and Java 21. <code>docker-compose.yml</code> starts PostgreSQL 16 on port 5432 and the app connects with the settings in <code>application.properties</code>. Run <code>./mvnw clean test</code> for the tests (they need the database running).</p>
+
+  <footer>
+    <span>MIT License</span>
+    <a href="https://github.com/LaxExe/ledger-service" target="_blank" rel="noopener">github.com/LaxExe/ledger-service</a>
+  </footer>
+</main>
+
+<script>
+  // theme
+  const root = document.documentElement;
+  const saved = localStorage.getItem('theme');
+  if (saved) root.dataset.theme = saved;
+  else if (matchMedia('(prefers-color-scheme: dark)').matches) root.dataset.theme = 'dark';
+  document.getElementById('theme').onclick = () => {
+    const n = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = n; localStorage.setItem('theme', n);
+  };
+  // copy buttons
+  document.querySelectorAll('.copy').forEach(b => b.onclick = () => {
+    navigator.clipboard.writeText(document.getElementById(b.dataset.t).textContent);
+    b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1200);
+  });
+  // segmented controls
+  const mode = {};
+  document.querySelectorAll('.sim').forEach(sim => {
+    mode[sim.id] = 'naive';
+    sim.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+      sim.querySelectorAll('.seg button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on'); mode[sim.id] = b.dataset.m;
     });
-    initTheme();
+  });
+  const usd = c => '$' + (c / 100).toFixed(2);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    // Copy to clipboard helper
-    function copyText(text, btn) {
-      navigator.clipboard.writeText(text);
-      const original = btn.textContent;
-      btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = original; }, 1500);
-    }
+  // Simulation 1: lost updates. Each "thread" reads, waits, then writes.
+  document.getElementById('runLost').onclick = async () => {
+    const log = document.getElementById('logLost');
+    const N = 50, T = 8, START = 5000;
+    let balance = START, locked = false, done = 0;
+    log.innerHTML = '';
+    const say = (t, c) => { log.innerHTML += `<div class="${c || ''}">${t}</div>`; log.scrollTop = log.scrollHeight; };
+    const withdraw = async id => {
+      if (mode.simLost === 'lock') { while (locked) await sleep(0); locked = true; }
+      const read = balance;
+      await sleep(Math.random() * 6);               // time between read and write
+      balance = read - 100;
+      if (mode.simLost === 'lock') locked = false;
+      if (id < 6 || id % 10 === 0) say(`thread ${id % T}: read ${usd(read)} → wrote ${usd(balance)}`);
+    };
+    let next = 0;
+    await Promise.all(Array.from({ length: T }, async () => { while (next < N) await withdraw(next++); }));
+    const expected = START - N * 100, gone = balance - expected;
+    document.getElementById('lostExp').textContent = usd(expected);
+    document.getElementById('lostAct').textContent = usd(balance);
+    const g = document.getElementById('lostGone');
+    g.textContent = usd(gone); g.style.color = gone ? 'var(--bad)' : 'var(--ok)';
+    say(gone ? `${usd(gone)} of withdrawals were overwritten.` : 'Every withdrawal counted.', gone ? 'bad' : 'ok');
+  };
 
-    // Accordion Toggle
-    function toggleAccordion(el) {
-      const item = el.parentElement;
-      item.classList.toggle('open');
-    }
-
-    // Interactive Simulator State
-    let alice = 10000;
-    let bob = 2000;
-    let logBox = document.getElementById('simLog');
-
-    function updateDisplay() {
-      document.getElementById('aliceBalance').textContent = '$' + (alice / 100).toFixed(2);
-      document.getElementById('aliceCents').textContent = alice.toLocaleString() + ' whole cents';
-      document.getElementById('bobBalance').textContent = '$' + (bob / 100).toFixed(2);
-      document.getElementById('bobCents').textContent = bob.toLocaleString() + ' whole cents';
-    }
-
-    function addLog(msg, type = 'info') {
-      const time = new Date().toLocaleTimeString();
-      const div = document.createElement('div');
-      div.className = 'sim-log-entry';
-      let colorStyle = '';
-      if (type === 'danger') colorStyle = 'style="color: var(--danger)"';
-      if (type === 'success') colorStyle = 'style="color: var(--success)"';
-      div.innerHTML = `<span class="sim-time">[${time}]</span> <span ${colorStyle}>${msg}</span>`;
-      logBox.appendChild(div);
-      logBox.scrollTop = logBox.scrollHeight;
-    }
-
-    function resetSimulator() {
-      alice = 10000;
-      bob = 2000;
-      updateDisplay();
-      addLog('Reset state: Alice = $100.00, Bob = $20.00. Total = $120.00.');
-    }
-
-    function executeNormalTransfer() {
-      if (alice >= 2500) {
-        alice -= 2500;
-        bob += 2500;
-        updateDisplay();
-        addLog('Transfer #1: Debited Alice -$25.00, Credited Bob +$25.00. Two ledger entries written. Sum = $0.00.', 'success');
+  // Simulation 2: duplicate retries.
+  document.getElementById('runIdem').onclick = async () => {
+    const log = document.getElementById('logIdem');
+    const R = 10, AMT = 2500;
+    const transfers = [], keyed = new Map();
+    log.innerHTML = '';
+    const say = (t, c) => { log.innerHTML += `<div class="${c || ''}">${t}</div>`; };
+    const request = async i => {
+      await sleep(Math.random() * 8);
+      if (mode.simIdem === 'key') {
+        if (keyed.has('abc-123')) { say(`request ${i + 1}: key exists → returned transfer #${keyed.get('abc-123')}`); return; }
+        // unique constraint: the first insert to land wins
+        const id = transfers.length + 1; transfers.push(AMT); keyed.set('abc-123', id);
+        say(`request ${i + 1}: inserted transfer #${id}`, 'ok');
       } else {
-        addLog('Insufficient funds in Alice account.', 'danger');
+        const id = transfers.length + 1; transfers.push(AMT);
+        say(`request ${i + 1}: inserted transfer #${id}`, 'bad');
       }
-    }
-
-    function executeOverdraft() {
-      addLog('POST /transfers: Alice ($' + (alice/100).toFixed(2) + ') &rarr; Bob ($150.00). Exception thrown: InsufficientFundsException! Transaction rolled back completely. Balances unchanged.', 'danger');
-    }
-
-    function executeConcurrentNoLock() {
-      addLog('SIMULATION [NO LOCK]: Firing 50 parallel $1.00 transfers simultaneously without pessimistic write locks...', 'danger');
-      setTimeout(() => {
-        // Demonstrate lost update
-        alice = 4400; // Only $6 deducted instead of $50!
-        bob = 2600;
-        updateDisplay();
-        addLog('FAILURE DEMONSTRATED: 50 requests read stale balance $100.00. 44 transfers were overwritten! Alice has $44.00 left instead of $0.00! Lost update anomaly reproduced.', 'danger');
-      }, 600);
-    }
-
-    function executeConcurrentWithLock() {
-      addLog('SIMULATION [PESSIMISTIC LOCK]: Firing 50 parallel $1.00 transfers with SELECT FOR UPDATE and ordered lock hierarchy...', 'info');
-      setTimeout(() => {
-        alice = 0;
-        bob = 7000;
-        updateDisplay();
-        addLog('SUCCESS: 50 transfers serialized cleanly at PostgreSQL row-level. Alice = $0.00, Bob = $70.00. System total strictly invariant at $120.00!', 'success');
-      }, 700);
-    }
-
-    function executeParallelIdempotency() {
-      addLog('SIMULATION: 10 parallel threads race sending the EXACT SAME Idempotency-Key "idem-abc-123"...', 'info');
-      setTimeout(() => {
-        addLog('Thread #1 committed transfer #105. Threads #2-10 caught duplicate key error 23505 (uk_transfers_idempotency_key). All 10 received receipt #105. Deduplicated 100% cleanly!', 'success');
-      }, 600);
-    }
-  </script>
+    };
+    await Promise.all(Array.from({ length: R }, (_, i) => request(i)));
+    document.getElementById('idemN').textContent = transfers.length;
+    const a = document.getElementById('idemAmt');
+    a.textContent = usd(transfers.length * AMT);
+    a.style.color = transfers.length === 1 ? 'var(--ok)' : 'var(--bad)';
+  };
+</script>
 </body>
 </html>
