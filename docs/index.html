@@ -80,10 +80,28 @@
     .sim-f { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:8px 14px; background:var(--surface-subtle); border-top:1px solid var(--border); font-size:11.5px; color:var(--ink-muted); }
     .run { background:var(--ink); color:var(--canvas); border:none; font:500 12px var(--font-sans); padding:5px 14px; border-radius:6px; cursor:pointer; }
     .run:hover { opacity:.9; }
-    .log { font-family:var(--font-mono); font-size:12px; line-height:1.6; min-height:132px; max-height:220px; overflow-y:auto; color:var(--ink-secondary); }
+    .log { font-family:var(--font-mono); font-size:12px; line-height:1.6; min-height:96px; max-height:140px; overflow-y:auto; color:var(--ink-secondary); }
     .log .ok { color:var(--ok); } .log .bad { color:var(--bad); }
     .result { display:flex; gap:24px; flex-wrap:wrap; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); font-family:var(--font-mono); font-size:12px; }
     .result b { color:var(--ink); }
+    .bal { display:flex; align-items:baseline; gap:10px; margin-bottom:8px; }
+    .bal b { font-family:var(--font-mono); font-size:30px; letter-spacing:-.03em; font-variant-numeric:tabular-nums; }
+    .bal span { font-size:12px; color:var(--ink-muted); }
+    .bar { height:6px; background:var(--surface-subtle); border:1px solid var(--border); border-radius:6px; overflow:hidden; margin-bottom:14px; }
+    .bar i { display:block; height:100%; width:100%; background:var(--ink); transition:width .08s linear; }
+    .lanes { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; margin-bottom:14px; }
+    .lane { height:28px; border:1px solid var(--border); border-radius:6px; font:500 10.5px var(--font-mono); color:var(--ink-muted); display:flex; align-items:center; justify-content:center; transition:background .25s, color .25s, border-color .25s; }
+    .lane.read { border-color:var(--ink-muted); color:var(--ink); }
+    .lane.write { background:var(--ink); color:var(--canvas); border-color:var(--ink); transition:none; }
+    .lane.wait { border-style:dashed; }
+    .cells { display:grid; grid-template-columns:repeat(10,1fr); gap:6px; margin-bottom:14px; }
+    .cell { height:44px; border:1px solid var(--border); border-radius:6px; font:500 10.5px var(--font-mono); color:var(--ink-muted); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.3; opacity:.5; transform:scale(.94); transition:all .25s; }
+    .cell.in { opacity:1; transform:none; }
+    .cell.new { border-color:var(--ok); color:var(--ok); }
+    .cell.dup { border-color:var(--bad); color:var(--bad); }
+    .cell.same { color:var(--ink-secondary); background:var(--surface-subtle); }
+    .shake { animation:shake .3s; }
+    @keyframes shake { 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
     footer { margin-top:56px; padding-top:20px; border-top:1px solid var(--border); font-size:13px; color:var(--ink-muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
   </style>
 </head>
@@ -127,6 +145,9 @@
       <div class="seg"><button class="on" data-m="naive">No locking</button><button data-m="lock">Row lock</button></div>
     </div>
     <div class="sim-b">
+      <div class="bal"><b id="balNum">$50.00</b><span id="balNote">Alice</span></div>
+      <div class="bar"><i id="balBar"></i></div>
+      <div class="lanes" id="lanes"></div>
       <div class="log" id="logLost">Alice starts with $50.00. Fire 50 withdrawals of $1.00 from 8 threads.</div>
       <div class="result"><span>Expected <b id="lostExp">$0.00</b></span><span>Actual <b id="lostAct">&mdash;</b></span><span>Vanished <b id="lostGone">&mdash;</b></span></div>
     </div>
@@ -139,6 +160,7 @@
       <div class="seg"><button class="on" data-m="naive">No key</button><button data-m="key">Idempotency-Key</button></div>
     </div>
     <div class="sim-b">
+      <div class="cells" id="cells"></div>
       <div class="log" id="logIdem">Send the same $25.00 transfer 10 times at once, as a client retrying a timeout would.</div>
       <div class="result"><span>Transfers recorded <b id="idemN">&mdash;</b></span><span>Alice charged <b id="idemAmt">&mdash;</b></span></div>
     </div>
@@ -271,55 +293,85 @@ Account second = accountRepository.findByIdForUpdate(secondId).orElseThrow(...);
   const usd = c => '$' + (c / 100).toFixed(2);
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-  // Simulation 1: lost updates. Each "thread" reads, waits, then writes.
+  // Simulation 1: lost updates. Each thread reads, waits a bit, then writes.
+  const lanesEl = document.getElementById('lanes');
+  for (let i = 0; i < 8; i++) lanesEl.innerHTML += `<div class="lane">T${i + 1}</div>`;
+  const lanes = [...lanesEl.children];
+  const setBal = c => {
+    document.getElementById('balNum').textContent = usd(c);
+    document.getElementById('balBar').style.width = (Math.max(c, 0) / 50) + '%';
+  };
+  let runningLost = false;
   document.getElementById('runLost').onclick = async () => {
+    if (runningLost) return; runningLost = true;
     const log = document.getElementById('logLost');
-    const N = 50, T = 8, START = 5000;
-    let balance = START, locked = false, done = 0;
-    log.innerHTML = '';
+    const N = 50, T = 8, START = 5000, lock = mode.simLost === 'lock';
+    let balance = START, locked = false, shown = 0;
+    setBal(balance); log.innerHTML = '';
+    ['lostAct', 'lostGone'].forEach(id => { const e = document.getElementById(id); e.textContent = '\u2014'; e.style.color = ''; });
+    document.getElementById('lostExp').textContent = usd(START - N * 100);
     const say = (t, c) => { log.innerHTML += `<div class="${c || ''}">${t}</div>`; log.scrollTop = log.scrollHeight; };
-    const withdraw = async id => {
-      if (mode.simLost === 'lock') { while (locked) await sleep(0); locked = true; }
+    const worker = async (t, lane) => {
+      lane.className = 'lane';
+      if (lock) { lane.className = 'lane wait'; while (locked) await sleep(5); locked = true; }
       const read = balance;
-      await sleep(Math.random() * 6);               // time between read and write
-      balance = read - 100;
-      if (mode.simLost === 'lock') locked = false;
-      if (id < 6 || id % 10 === 0) say(`thread ${id % T}: read ${usd(read)} → wrote ${usd(balance)}`);
+      lane.className = 'lane read'; lane.textContent = usd(read).replace('.00', '');
+      await sleep(40 + Math.random() * 90);
+      balance = read - 100; setBal(balance);
+      lane.className = 'lane write'; lane.textContent = usd(balance).replace('.00', '');
+      if (lock) locked = false;
+      if (shown++ < 7) say(`T${t + 1} read ${usd(read)}, wrote ${usd(balance)}`);
+      await sleep(30);
+      lane.className = 'lane'; lane.textContent = 'T' + (t + 1);
     };
     let next = 0;
-    await Promise.all(Array.from({ length: T }, async () => { while (next < N) await withdraw(next++); }));
+    await Promise.all(lanes.map(async (lane, t) => { while (next++ < N) await worker(t, lane); }));
     const expected = START - N * 100, gone = balance - expected;
-    document.getElementById('lostExp').textContent = usd(expected);
     document.getElementById('lostAct').textContent = usd(balance);
     const g = document.getElementById('lostGone');
     g.textContent = usd(gone); g.style.color = gone ? 'var(--bad)' : 'var(--ok)';
     say(gone ? `${usd(gone)} of withdrawals were overwritten.` : 'Every withdrawal counted.', gone ? 'bad' : 'ok');
+    document.getElementById('balNote').textContent = gone ? 'Alice (wrong)' : 'Alice (correct)';
+    runningLost = false;
   };
 
-  // Simulation 2: duplicate retries.
+  // Simulation 2: ten identical requests at once.
+  const cellsEl = document.getElementById('cells');
+  const resetCells = () => {
+    cellsEl.innerHTML = '';
+    for (let i = 0; i < 10; i++) cellsEl.innerHTML += `<div class="cell"><span>#${i + 1}</span><span>&nbsp;</span></div>`;
+  };
+  resetCells();
+  let runningIdem = false;
   document.getElementById('runIdem').onclick = async () => {
+    if (runningIdem) return; runningIdem = true;
+    resetCells();
     const log = document.getElementById('logIdem');
-    const R = 10, AMT = 2500;
-    const transfers = [], keyed = new Map();
+    const R = 10, AMT = 2500, useKey = mode.simIdem === 'key';
+    const transfers = []; let winner = null;
     log.innerHTML = '';
-    const say = (t, c) => { log.innerHTML += `<div class="${c || ''}">${t}</div>`; };
+    const say = (t, c) => { log.innerHTML += `<div class="${c || ''}">${t}</div>`; log.scrollTop = log.scrollHeight; };
     const request = async i => {
-      await sleep(Math.random() * 8);
-      if (mode.simIdem === 'key') {
-        if (keyed.has('abc-123')) { say(`request ${i + 1}: key exists → returned transfer #${keyed.get('abc-123')}`); return; }
-        // unique constraint: the first insert to land wins
-        const id = transfers.length + 1; transfers.push(AMT); keyed.set('abc-123', id);
-        say(`request ${i + 1}: inserted transfer #${id}`, 'ok');
+      const cell = cellsEl.children[i];
+      await sleep(Math.random() * 700);
+      let cls, label;
+      if (useKey && winner) {
+        cls = 'same'; label = 'same #' + winner;
+        say(`request ${i + 1}: key exists, returned transfer #${winner}`);
       } else {
         const id = transfers.length + 1; transfers.push(AMT);
-        say(`request ${i + 1}: inserted transfer #${id}`, 'bad');
+        if (useKey) { winner = id; cls = 'new'; label = 'new #' + id; say(`request ${i + 1}: inserted transfer #${id}`, 'ok'); }
+        else { cls = id === 1 ? 'new' : 'dup'; label = 'new #' + id; say(`request ${i + 1}: inserted transfer #${id}`, id === 1 ? 'ok' : 'bad'); }
       }
+      cell.className = 'cell in ' + cls; cell.lastChild.textContent = label;
+      if (cls === 'dup') cell.classList.add('shake');
     };
     await Promise.all(Array.from({ length: R }, (_, i) => request(i)));
     document.getElementById('idemN').textContent = transfers.length;
     const a = document.getElementById('idemAmt');
     a.textContent = usd(transfers.length * AMT);
     a.style.color = transfers.length === 1 ? 'var(--ok)' : 'var(--bad)';
+    runningIdem = false;
   };
 </script>
 </body>
