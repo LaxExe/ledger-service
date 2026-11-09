@@ -29,15 +29,13 @@
     .nav-inner { max-width:720px; margin:0 auto; padding:0 20px; height:52px; display:flex; align-items:center; justify-content:space-between; }
     .logo { display:flex; align-items:center; gap:8px; font-weight:600; letter-spacing:-.01em; }
     .logo svg { flex-shrink:0; }
-    .hero-head { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
-    .hero-head svg { flex-shrink:0; }
     .nav-right { display:flex; align-items:center; gap:16px; }
     .nav-link { font-size:13px; color:var(--ink-secondary); }
     .nav-link:hover { color:var(--ink); }
     .theme-btn { background:none; border:1px solid var(--border); color:var(--ink-secondary); width:30px; height:30px; border-radius:6px; cursor:pointer; font-size:12px; }
     .theme-btn:hover { border-color:var(--border-hover); color:var(--ink); }
     main { max-width:720px; margin:0 auto; padding:48px 20px 80px; }
-    .meta { font-family:var(--font-mono); font-size:12px; color:var(--ink-muted); margin:0; }
+    .meta { font-family:var(--font-mono); font-size:12.5px; color:var(--ink); margin:0 0 10px; }
     h1 { font-size:32px; font-weight:700; letter-spacing:-.03em; line-height:1.15; margin-bottom:12px; }
     .lead { font-size:16px; color:var(--ink-secondary); margin-bottom:24px; }
     h2 { font-size:22px; font-weight:600; letter-spacing:-.02em; margin:48px 0 12px; }
@@ -135,12 +133,10 @@
 <header>
   <div class="nav-inner">
     <a class="logo" href="#">
-      <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
-        <rect width="32" height="32" rx="7.2" fill="#141417"/>
-        <rect x="0.5" y="0.5" width="31" height="31" rx="6.7" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-        <rect x="9.5" y="7.5" width="3" height="17" rx="0.9" fill="#FAFAFA"/>
-        <rect x="15.5" y="10.5" width="7" height="3" rx="0.9" fill="#22C55E"/>
-        <rect x="15.5" y="18.5" width="7" height="3" rx="0.9" fill="#71717A"/>
+      <svg viewBox="0 0 32 32" width="20" height="20" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#171717"/>
+        <path d="M9 12H23M23 12L19 8M23 12L19 16" stroke="#FAFAFA" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M23 20H9M9 20L13 16M9 20L13 24" stroke="#FAFAFA" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
       </svg>
       <span>Ledger Service</span>
     </a>
@@ -156,16 +152,7 @@
 
 <main>
   <section>
-    <div class="hero-head">
-      <svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true">
-        <rect width="64" height="64" rx="14.3" fill="#141417"/>
-        <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.8" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.2"/>
-        <rect x="19" y="15" width="6" height="34" rx="1.8" fill="#FAFAFA"/>
-        <rect x="31" y="21" width="14" height="6" rx="1.8" fill="#22C55E"/>
-        <rect x="31" y="37" width="14" height="6" rx="1.8" fill="#71717A"/>
-      </svg>
-      <p class="meta">Built using Java 21, Spring Boot 3.3, PostgreSQL 16</p>
-    </div>
+    <p class="meta">Built using Java 21, Spring Boot 3.3, PostgreSQL 16</p>
     <h1>A ledger that doesn't lose money.</h1>
     <p class="lead">
       This is a small API I wrote that moves money between accounts. Two things tend to go wrong with that: requests at the same time overwrite each other, and a retried request charges someone twice. I fixed both, and wrote tests that try to break it.
